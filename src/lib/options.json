@@ -1,0 +1,13 @@
+{
+  "type": {
+    "id": {
+      "doc": "The field that will be used as the primary key for the database",
+      "type": "string"
+    },
+    "listen": {
+      "doc": "Whether or not to attach a listener on the file/folder to listen for changes",
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

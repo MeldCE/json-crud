@@ -1,0 +1,51 @@
+{
+  "name": "json-db",
+  "version": "0.8.1",
+  "description": "A simple CRUD json database.",
+  "main": "lib/json-db.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MeldCE/json-db.git"
+  },
+  "keywords": [
+    "schema",
+    "validation",
+    "oject"
+  ],
+  "author": "MeldCE Opensource",
+  "license": "GPL-2.0",
+  "bugs": {
+    "url": "https://github.com/MeldCE/skema/issues"
+  },
+  "homepage": "https://github.com/MeldCE/skema#readme",
+  "devDependencies": {
+    "concat": "^1.0.0",
+    "del": "^2.2.0",
+    "gulp": "^3.9.0",
+    "gulp-check-deps": "^1.3.0",
+    "gulp-complexity": "^0.3.2",
+    "gulp-concat": "^2.6.0",
+    "gulp-coveralls": "^0.1.4",
+    "gulp-documentation": "^2.1.0",
+    "gulp-eslint": "^1.1.1",
+    "gulp-foreach": "^0.1.0",
+    "gulp-include": "^2.1.0",
+    "gulp-istanbul": "^0.10.3",
+    "gulp-jasmine": "^2.2.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-replace": "^0.5.4",
+    "gulp-strip-debug": "^1.1.0",
+    "gulp-util": "^3.0.7",
+    "jasmine": "^2.4.1",
+    "jasmine2-reporter": "^0.1.1",
+    "rename": "^1.0.3"
+  },
+  "dependencies": {
+    "merge": "^1.2.0",
+    "skemer": "^0.8.6-r1"
+  },
+  "tonicExampleFilename": "example.js"
+}
