@@ -22,78 +22,78 @@ var complexity = require('gulp-complexity');
 
 
 var paths = {
-	dist: './',
-	build: 'build/',
-	reports: 'reports/',
-	docs: 'docs/',
-	src: 'src/lib/**/*.js',
-	testDir: 'src/spec',
-	testSrc: 'src/*.spec.js',
-	srcTests: 'src/spec/**/*.spec.js',
-	srcTestLib: 'src/spec/lib/*.js',
-	srcJasmineJson: 'src/spec/support/jasmine.json',
-	tests: 'spec/**/*.spec.js',
-	lcov: 'coverage/lcov.info',
-	mddoc: 'doc.md'
+  dist: './',
+  build: 'build/',
+  reports: 'reports/',
+  docs: 'docs/',
+  src: 'src/lib/**/*.js',
+  testDir: 'src/spec',
+  testSrc: 'src/*.spec.js',
+  srcTests: 'src/spec/**/*.spec.js',
+  srcTestLib: 'src/spec/lib/*.js',
+  srcJasmineJson: 'src/spec/support/jasmine.json',
+  tests: 'spec/**/*.spec.js',
+  lcov: 'coverage/lcov.info',
+  mddoc: 'doc.md'
 };
 
 gulp.task('clean', [], function() {
-	del([
-		path.join(paths.dist, '**'),
-		path.join(paths.build, '**')
-	], {force: true});
+  del([
+    path.join(paths.dist, '**'),
+    path.join(paths.build, '**')
+  ], {force: true});
 });
 
 gulp.task('check:deps', function() {
-	return gulp.src('package.json')
-			.pipe(checkDeps());
+  return gulp.src('package.json')
+      .pipe(checkDeps());
 });
 
 gulp.task('lint', function() {
-	return gulp.src(paths.src)
-			.pipe(eslint({
-				useEslintrc: true,
-				env: {
-					node: true,
-					es6: true
-				}
-			}))
-			.pipe(eslint.format())
-			.pipe(eslint.failAfterError());
+  return gulp.src(paths.src)
+      .pipe(eslint({
+        useEslintrc: true,
+        env: {
+          node: true,
+          es6: true
+        }
+      }))
+      .pipe(eslint.format())
+      .pipe(eslint.failAfterError());
 });
 
 gulp.task('lint:test', function() {
-	return gulp.src([paths.srcTests, paths.srcTestLib])
-			.pipe(eslint({
-				useEslintrc: true,
-				env: {
-					node: true,
-					es6: true,
-					jasmine: true
-				}
-			}))
-			.pipe(eslint.format())
-			.pipe(eslint.failAfterError());
+  return gulp.src([paths.srcTests, paths.srcTestLib])
+      .pipe(eslint({
+        useEslintrc: true,
+        env: {
+          node: true,
+          es6: true,
+          jasmine: true
+        }
+      }))
+      .pipe(eslint.format())
+      .pipe(eslint.failAfterError());
 });
 
 gulp.task('compile:tests', function() {
-	return gulp.src(paths.testSrc)
-			.pipe(include())
-			.pipe(eslint({
-				useEslintrc: true,
-				env: {
-					node: true,
-					es6: true,
-					jasmine: true
-				}
-			}))
-			.pipe(eslint.format())
-			.pipe(eslint.failAfterError())
-			.pipe(gulp.dest(paths.testDir));
+  return gulp.src(paths.testSrc)
+      .pipe(include())
+      .pipe(eslint({
+        useEslintrc: true,
+        env: {
+          node: true,
+          es6: true,
+          jasmine: true
+        }
+      }))
+      .pipe(eslint.format())
+      .pipe(eslint.failAfterError())
+      .pipe(gulp.dest(paths.testDir));
 });
 
 gulp.task('pre-test', ['lint', 'lint:test'], function() {
-	return gulp.src(paths.src)
+  return gulp.src(paths.src)
     // Covering files
     .pipe(istanbul())
     // Force `require` to return covered files
@@ -103,105 +103,105 @@ gulp.task('pre-test', ['lint', 'lint:test'], function() {
 });
 
 gulp.task('jasmine', ['compile:tests', 'lint', 'lint:test', 'pre-test'], function() {
-	return gulp.src(paths.srcTests)
-			.pipe(jasmine())
-			//.pipe(istanbul.writeReports());
+  return gulp.src(paths.srcTests)
+      .pipe(jasmine())
+      //.pipe(istanbul.writeReports());
 });
 
 gulp.task('jasmine:production', ['copy', 'jasmine'], function() {
-	return gulp.src(paths.tests)
-			.pipe(jasmine())
-			.pipe(istanbul.writeReports())
-			.pipe(istanbul.enforceThresholds({ thresholds: { each: {
-				statements: 100,
-				branches: 80,
-				lines: 100
-			} } }));
+  return gulp.src(paths.tests)
+      .pipe(jasmine())
+      .pipe(istanbul.writeReports())
+      .pipe(istanbul.enforceThresholds({ thresholds: { each: {
+        statements: 100,
+        branches: 80,
+        lines: 100
+      } } }));
 });
 
 gulp.task('coveralls', ['jasmine:production'], function() {
-	return gulp.src(paths.lcov)
-  			.pipe(coveralls());
+  return gulp.src(paths.lcov)
+        .pipe(coveralls());
 });
 
 gulp.task('complexity', ['lint', 'lint:test'], function() {
-	return gulp.src(paths.src)
-			.pipe(complexity());
+  return gulp.src(paths.src)
+      .pipe(complexity());
 });
 
 gulp.task('docs', ['htmldocs', 'mddocs']);
 
 gulp.task('htmldocs', ['lint'], function() {
-	return gulp.src(paths.src)
-			.pipe(documentation({ format: 'html' }))
-			.pipe(gulp.dest(paths.docs));
+  return gulp.src(paths.src)
+      .pipe(documentation({ format: 'html' }))
+      .pipe(gulp.dest(paths.docs));
 });
 
 gulp.task('mddocs', ['lint'], function() {
-	return gulp.src(paths.src)
-			.pipe(foreach(function(stream, file) {
-				return stream
-						.pipe(documentation({ format: 'md', shallow: true }))
-						.pipe(replace(/^#/gm, '##'))
-						.pipe(concat(file.relative + '.md'));
-						//.pipe(rename({
-						//	basename: file.name,
-						//	extname: '.md'
-						//}));
-			}))
-			//.pipe(concat(paths.mddoc))
-			.pipe(gulp.dest(paths.build));
+  return gulp.src(paths.src)
+      .pipe(foreach(function(stream, file) {
+        return stream
+            .pipe(documentation({ format: 'md', shallow: true }))
+            .pipe(replace(/^#/gm, '##'))
+            .pipe(concat(file.relative + '.md'));
+            //.pipe(rename({
+            //  basename: file.name,
+            //  extname: '.md'
+            //}));
+      }))
+      //.pipe(concat(paths.mddoc))
+      .pipe(gulp.dest(paths.build));
 });
 
 /*gulp.task('mddocs', ['lint'], function() {
-	return gulp.src(paths.src)
-			.pipe(documentation({ format: 'md' }))
-			//.pipe(concat(paths.mddoc))
-			.pipe(gulp.dest(paths.build));
+  return gulp.src(paths.src)
+      .pipe(documentation({ format: 'md' }))
+      //.pipe(concat(paths.mddoc))
+      .pipe(gulp.dest(paths.build));
 });*/
 
 gulp.task('readme', ['mddocs'], function() {
-	return gulp.src(['src/README.md', path.join(paths.build, paths.mddoc)])
-			.pipe(concat('README.md'))
-			.pipe(replace(/%%([a-zA-Z0-9-_.]+)%%/g, function(match, param) {
-				if (packageInfo[param]) {
-					return packageInfo[param];
-				} else {
-					return match;
-				}
-			}))
-			.pipe(include())
-			.pipe(gulp.dest('./'));
+  return gulp.src(['src/README.md', path.join(paths.build, paths.mddoc)])
+      .pipe(concat('README.md'))
+      .pipe(replace(/%%([a-zA-Z0-9-_.]+)%%/g, function(match, param) {
+        if (packageInfo[param]) {
+          return packageInfo[param];
+        } else {
+          return match;
+        }
+      }))
+      .pipe(include())
+      .pipe(gulp.dest('./'));
 });
 
 gulp.task('copy', ['jasmine', 'copy:jasmine.json'], function() {
-	return gulp.src([paths.src, paths.srcTests, paths.srcTestLib], { base: 'src' })
-		.pipe(stripDebug())
-		.pipe(gulp.dest(paths.dist));
+  return gulp.src([paths.src, paths.srcTests, paths.srcTestLib], { base: 'src' })
+    .pipe(stripDebug())
+    .pipe(gulp.dest(paths.dist));
 });
 
 gulp.task('copy:jasmine.json', ['jasmine'], function() {
-	return gulp.src(paths.srcJasmineJson, { base: 'src' })
-		.pipe(gulp.dest(paths.dist));
+  return gulp.src(paths.srcJasmineJson, { base: 'src' })
+    .pipe(gulp.dest(paths.dist));
 });
 
 gulp.task('test', ['lint', 'lint:test', 'compile:tests'], function() {
-	return gulp.src(paths.srcTests)
-			.pipe(jasmine({
-				reporter: new coolReporter({
-					inColors: true
-				})
-			}))
+  return gulp.src(paths.srcTests)
+      .pipe(jasmine({
+        reporter: new coolReporter({
+          inColors: true
+        })
+      }))
 });
 
 gulp.task('watch', function() {
-	gulp.watch([paths.src, paths.srcTests], ['jasmine']);
-	gulp.watch(paths.src, ['lint']);
-	gulp.watch(paths.testSrc, ['compile:tests']);
-	gulp.watch(paths.srcTests, ['lint:test']);
-	gulp.watch(['src/README.md', paths.src], ['readme']);
-	gulp.watch(paths.src, ['docs']);
-	gulp.watch('package.json', ['check:deps']);
+  gulp.watch([paths.src, paths.srcTests], ['jasmine']);
+  gulp.watch(paths.src, ['lint']);
+  gulp.watch(paths.testSrc, ['compile:tests']);
+  gulp.watch(paths.srcTests, ['lint:test']);
+  gulp.watch(['src/README.md', paths.src], ['readme']);
+  gulp.watch(paths.src, ['docs']);
+  gulp.watch('package.json', ['check:deps']);
 });
 
 defaultTasks = ['check:deps', 'jasmine', /*'complexity',*/ 'docs', 'readme'];

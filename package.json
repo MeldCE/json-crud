@@ -1,26 +1,29 @@
 {
-  "name": "json-db",
-  "version": "0.8.1",
-  "description": "A simple CRUD json database.",
-  "main": "lib/json-db.js",
+  "name": "json-crud",
+  "version": "0.1.0",
+  "description": "A simple CRUD JSON database using either a JSON file or a folder of JSON files.",
+  "main": "lib/index.js",
   "scripts": {
     "test": "gulp test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MeldCE/json-db.git"
+    "url": "git+https://github.com/MeldCE/json-crud.git"
   },
   "keywords": [
-    "schema",
-    "validation",
-    "oject"
+    "json",
+    "database",
+    "db",
+    "file",
+    "folder",
+    "crud"
   ],
   "author": "MeldCE Opensource",
-  "license": "GPL-2.0",
+  "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/MeldCE/skema/issues"
+    "url": "https://github.com/MeldCE/json-crud/issues"
   },
-  "homepage": "https://github.com/MeldCE/skema#readme",
+  "homepage": "https://github.com/MeldCE/json-crud#readme",
   "devDependencies": {
     "concat": "^1.0.0",
     "del": "^2.2.0",
