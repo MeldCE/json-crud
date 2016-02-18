@@ -1,0 +1,7 @@
+{
+  "test": "stored",
+  "testcomplex": {
+    "value": "cool",
+    "another": "notcool"
+  }
+}

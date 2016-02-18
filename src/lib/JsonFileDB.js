@@ -10,8 +10,10 @@ var allowedTypes = ['string', 'number'];
  * @returns {Promise} A promise that will resolve when the save is complete
  */
 function save() {
-  return Promise(function(resolve, reject) {
-    fs.writeFile(this.file, this.data, function(err) {
+  var me = this;
+  console.log('save called', this);
+  return new Promise(function(resolve, reject) {
+    fs.writeFile(me.file, me.data, function(err) {
       if (err) {
         reject({
           message: 'Error saving data to file',
@@ -80,53 +82,62 @@ function JsonFileDB(file, options) {
 
 JsonFileDB.prototype = {
   create: function() {
-    return Promise(function(resolve, reject) {
-      var data, id, replace;
-      if (this.options.id) {
-        data = arguments[0];
-
-        // Check id is there and TODO is indexable
-        if (data[this.options.id]) {
-          id = data[this.options.id];
+    return new Promise(function(resolve, reject) {
+      var args = Array.prototype.slice.call(arguments);
+      var newData, ids = [], replace;
+      // Check if we have a replace flag
+      if (args.length >= 2) {
+        if (typeof args[0] === 'boolean') {
+          replace = args.shift();
         }
+      }
 
-        if (arguments.length >= 2) {
-          if (typeof arguments[1] !== 'boolean') {
-            reject({
-              message: 'Value for replace not a Boolean'
-            });
+      if (!args.length) {
+        return reject(new Error('No data given'));
+      }
+
+      // Check if the next argument is a string if we have more than one
+      while (args.length >= 2 && typeof args[0] === 'string') {
+          if (!replace && this.data[args[0]] !== undefined) {
+            return reject(new Error('valur for ' + args[0]
+                + ' already exists'));
           }
-
-          replace = arguments[1];
-        }
-      } else {
-        // TODO Check if id is indexable
-        id = arguments[0];
-
-        data = arguments[1];
-      }
-
-      if (data === 'undefined') {
-        reject({
-          message: 'No data given'
-        });
-      }
-
-      // Check if value already exists and reject if it does and not replace
-      if (!replace && this.data[id] !== 'undefined') {
-        reject({
-          message: 'Item ' + id + ' already exists (and not replacing)'
-        })
-      }
-
-      this.data[id] = data;
-
-      if (this.options.sync) {
-        // TODO do we need to call resolve here?
-        save.call(this, id);
+          ids.push(args[0]);
+          newData[args.shift()] = args.shift();
+          continue;
       }
       
-      resolve(id);
+      if (args.length && this.options && this.options.id) {
+        while (args.length) {
+          if (!(args[0] instanceof Object
+              && args[0][this.options.id] !== undefined)) {
+            return reject(new Error('Found value without an id field'));
+          }
+          if (!replace && this.data[args[0][this.options.id]] !== undefined) {
+            return reject(new Error('valur for ' + args[0][this.options.id]
+                + ' already exists'));
+          }
+          ids.push(args[0][this.options.id]);
+          newData[args[0][this.options.id]] = args.shift();
+        }
+      }
+
+      // Merge new data into old
+      var i;
+      for (i in newData) {
+        this.data[i] = newData[i];
+      }
+
+      if (!(this.options && this.options.noSync)) {
+        // TODO do we need to call resolve here?
+        save.call(this, ids).then(function() {
+          resolve(ids);
+        }, function(err) {
+          reject(err);
+        });
+      } else {
+        resolve(ids);
+      }
     });
   },
 

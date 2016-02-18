@@ -4,6 +4,10 @@ module.exports = {
       doc: {
         doc: 'Creates a bew item in the database',
         parameters: {
+          replace: {
+            doc: 'Whether or not a existing record should be replaced. If false, an error will be thrown if an item with the same id already exists',
+            type: 'boolean'
+          },
           id: {
             doc: 'String identifier for the new item. Must only be set if no id field is specified in the options.',
             type: 'string'
@@ -12,10 +16,6 @@ module.exports = {
             doc: 'Data for the new item',
             type: 'any',
             required: true
-          },
-          replace: {
-            doc: 'Whether or not a existing record should be replaced. If false, an error will be thrown if an item with the same id already exists',
-            type: 'boolean'
           }
         },
         returns: {
