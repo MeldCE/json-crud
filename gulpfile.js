@@ -210,4 +210,6 @@ gulp.task('one', defaultTasks);
 
 gulp.task('default', defaultTasks.concat(['watch']));
 
+gulp.task('develop', defaultTasks.concat(['copy', 'watch']));
+
 gulp.task('production', defaultTasks.concat(['copy', 'jasmine:production', 'coveralls']));

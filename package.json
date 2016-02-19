@@ -2,7 +2,7 @@
   "name": "json-crud",
   "version": "0.1.0",
   "description": "A simple CRUD JSON database using either a JSON file or a folder of JSON files.",
-  "main": "lib/index.js",
+  "main": "lib/json-crud.js",
   "scripts": {
     "test": "gulp test"
   },
