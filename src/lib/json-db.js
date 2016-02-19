@@ -21,12 +21,10 @@ var optionsSchema = require('./options.json');
  */
 function jsonDB(file, options) {
   return new Promise(function(resolve, reject) {
-    console.log('HELLO!');
     // Check options
     try {
       options = skemer.validateNew({ schema: optionsSchema }, options || {});
     } catch (err) {
-      console.log('rejection');
       reject({
         message: 'Error with given options: ' + err.message,
         error: err
@@ -39,7 +37,6 @@ function jsonDB(file, options) {
     // Absolutise the file name with the CWD
     file = path.resolve(process.cwd(), file);
 
-    console.log('still going', file);
     // Check file/folder
     fs.access(file, fs.R_OK | fs.W_OK, function(err) {
       if (err) {

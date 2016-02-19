@@ -10,10 +10,8 @@ var allowedTypes = ['string', 'number'];
  * @returns {Promise} A promise that will resolve when the save is complete
  */
 function save() {
-  var me = this;
-  console.log('save called', this);
   return new Promise(function(resolve, reject) {
-    fs.writeFile(me.file, me.data, function(err) {
+    fs.writeFile(this.file, JSON.stringify(this.data, null, 2), function(err) {
       if (err) {
         reject({
           message: 'Error saving data to file',
@@ -23,7 +21,7 @@ function save() {
 
       resolve();
     });
-  });
+  }.bind(this));
 }
 
 /** @private
@@ -82,9 +80,9 @@ function JsonFileDB(file, options) {
 
 JsonFileDB.prototype = {
   create: function() {
+    var args = Array.prototype.slice.call(arguments);
     return new Promise(function(resolve, reject) {
-      var args = Array.prototype.slice.call(arguments);
-      var newData, ids = [], replace;
+      var newData = {}, ids = [], replace;
       // Check if we have a replace flag
       if (args.length >= 2) {
         if (typeof args[0] === 'boolean') {
@@ -114,7 +112,7 @@ JsonFileDB.prototype = {
             return reject(new Error('Found value without an id field'));
           }
           if (!replace && this.data[args[0][this.options.id]] !== undefined) {
-            return reject(new Error('valur for ' + args[0][this.options.id]
+            return reject(new Error('Value for ' + args[0][this.options.id]
                 + ' already exists'));
           }
           ids.push(args[0][this.options.id]);
@@ -138,7 +136,7 @@ JsonFileDB.prototype = {
       } else {
         resolve(ids);
       }
-    });
+    }.bind(this));
   },
 
   read: function(filter, expectOne) {
@@ -225,22 +223,46 @@ JsonFileDB.prototype = {
   },
 
   delete: function(filter) {
-    assert(typeof folter === 'object');
+    return new Promise(function(resolve, reject) {
+      if (allowedTypes.indexOf(typeof filter) !== -1) {
+        if (this.data[filter] !== undefined) {
+          delete this.data[filter];
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      } else if (filter instanceof Array) {
+        var i, data = {};
+        for (i in filter) {
+          if (allowedTypes.indexOf(typeof filter[f]) !== -1) {
+            if (this.data[filter[f]] !== undefined) {
+              data[filter[f]] = this.data[filter[f]];
+            }
+          }
+        }
+        resolve(data);
+      } else if (typeof filter !== 'object') {
+        reject({
+          message: 'filter needs to be an object containing a filter'
+        });
+      } else {
+        idsFromFilter.call(this, filter).then(function(ids) {
+          if (ids.length === 0) {
+            if (expectOne) {
+              resolve();
+            }
+            resolve({});
+          }
 
-    var ids = idsFromFilter.call(this, filter);
+          var i, items;
+          for (i in ids) {
+            items[ids[i]] = this.data[ids[i]];
+          }
 
-    if (ids.length === 0) {
-      return;
-    }
-
-    var i, items;
-    for (i in ids) {
-      items[ids[i]] = this.data[ids[i]];
-    }
-    
-    if (this.options.sync) {
-      save.call(this);
-    }
+          resolve(items);
+        });
+      }
+    }.bind(this));
   }
 };
 
