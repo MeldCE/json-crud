@@ -2,6 +2,9 @@ var assert = require('assert');
 var merge = require('merge');
 var fs = require('fs');
 var path = require('path');
+var Promise require('promise');
+var writeFiles = Promise.denodeify(fs.writeFile);
+var unlink = Promise.denodeify(fs.unlink);
 
 /** @private
  * Get the filename for a given id
@@ -13,6 +16,16 @@ function getFilename(id) {
   return path.join(this.file, id + '.json');
 }
 
+function doSave(id) {
+  var filename = getFilename.call(this, id);
+  if (this.data[id] === undefined) {
+    // Delete file if exists
+    return unlink(filename);
+  } else {
+    return writeFile(filename, JSON.stringify(this.data, null, 2)); 
+  }
+}
+
 /**
  * Saves the data back to the file
  *
@@ -22,21 +35,24 @@ function getFilename(id) {
  */
 function save(id) {
   return Promise(function(resolve, reject) {
-    var filename = getFilename.call(this, id);
-    if (this.data[id] === 'undefined') {
-      // Delete file if exists
-    } else {
-      fs.writeFile(filename, this.data, function(err) {
-        if (err) {
-          reject({
-            message: 'Error saving data to file ' + filename,
-            error: err
-          });
-        }
+    if (id instanceof Array) {
+      let i, saves = [];
+      for (i in id) {
+        saves.push(doSave.call(this, id[i]));
+      }
+      Promise.all(saves).then(function() {
+        resolve(id);
+      }, function(err) {
+        reject(err, id);
       });
+    } else {
+      doSave.call(this, id).then(function() {
+        resolve(id);
+      }, function(err) {
+        reject(err, id);
+      }
     }
-    resolve();
-  });
+  }.bind(this));
 }
 
 /** @private
@@ -71,7 +87,7 @@ function JsonFolderDB(file, options) {
   // Load existing data
   this.file = file;
   this.data = require(file);
-  this.options = options;
+  this.options = options || {};
 
   // Attach listener on to file
   if (options.listen) {
