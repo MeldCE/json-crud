@@ -16,6 +16,13 @@ function getFilename(id) {
   return path.join(this.file, id + '.json');
 }
 
+/** @private
+ * Does the actual saving of the data to the file. Called by (@see save)
+ *
+ * @param {String} id String identifier of parameter that is to be saved
+ *
+ * @returns {Promise} A promise that will resolve when the save is complete
+ */
 function doSave(id) {
   var filename = getFilename.call(this, id);
   if (this.data[id] === undefined) {
@@ -26,10 +33,11 @@ function doSave(id) {
   }
 }
 
-/**
+/** @private
  * Saves the data back to the file
  *
- * @param {String} id String identifier of parameter that brought about save
+ * @param {String|String[]} id String identifier or array of string
+ *        indentifiers of parameter that brought about save
  *
  * @returns {Promise} A promise that will resolve when the save is complete
  */
