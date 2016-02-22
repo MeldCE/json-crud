@@ -1,8 +1,10 @@
+'use strict';
+
 var assert = require('assert');
 var merge = require('merge');
 var fs = require('fs');
 var path = require('path');
-var Promise require('promise');
+var Promise = require('promise');
 var writeFiles = Promise.denodeify(fs.writeFile);
 var unlink = Promise.denodeify(fs.unlink);
 
@@ -58,7 +60,7 @@ function save(id) {
         resolve(id);
       }, function(err) {
         reject(err, id);
-      }
+      });
     }
   }.bind(this));
 }
@@ -93,9 +95,20 @@ function listener(event, filename) {
 
 function JsonFolderDB(file, options) {
   // Load existing data
-  this.file = file;
-  this.data = require(file);
-  this.options = options || {};
+  Object.defineProperties(this, {
+    file: {
+      value: file,
+      writable: true
+    },
+    data: {
+      value: {},
+      writable: true
+    },
+    // @TODO this.files = {} Add for monitoring if we have tried to load files
+    options: {
+      value: options || {}
+    }
+  });
 
   // Attach listener on to file
   if (options.listen) {

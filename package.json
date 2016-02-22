@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "merge": "^1.2.0",
+    "promise": "^7.1.1",
     "skemer": "^0.8.6-r1"
   },
   "tonicExampleFilename": "example.js"
