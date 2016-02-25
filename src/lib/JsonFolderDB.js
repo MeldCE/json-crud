@@ -8,6 +8,8 @@ var Promise = require('promise');
 var writeFiles = Promise.denodeify(fs.writeFile);
 var unlink = Promise.denodeify(fs.unlink);
 
+var allowedTypes = ['string', 'number'];
+
 /** @private
  * Get the filename for a given id
  *
@@ -16,6 +18,18 @@ var unlink = Promise.denodeify(fs.unlink);
 function getFilename(id) {
   // @TODO Sanitise id string
   return path.join(this.file, id + '.json');
+}
+
+function getData(id) {
+  //return new Promise(resolve, reject
+  if (this.data[id]) {
+    return this.data[id];
+  }
+
+  let file = getFilename.call(this, id);
+
+  // Check if file exists
+
 }
 
 /** @private
@@ -111,7 +125,7 @@ function JsonFolderDB(file, options) {
   });
 
   // Attach listener on to file
-  if (options.listen) {
+  if (this.options.listen) {
     fs.watch(file, { persistent: true }, listener);
   }
 }
@@ -170,8 +184,12 @@ JsonFolderDB.prototype = {
 
   read: function(filter, expectOne) {
     return new Promise(function(resolve, reject) {
-      if (typeof folter !== 'object') {
-        reject({
+      // Check for id
+      if (allowedTypes.indexOf(typeof filter) !== -1) {
+        // 
+        return resolve('something');
+      } else if (typeof filter !== 'object') {
+        return reject({
           message: 'filter needs to be an object containing a filter'
         });
       }
@@ -191,7 +209,7 @@ JsonFolderDB.prototype = {
 
         resolve(items);
       });
-    });
+    }.bind(this));
   },
 
   update: function() {
