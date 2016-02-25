@@ -169,7 +169,7 @@ JsonFolderDB.prototype = {
   },
 
   read: function(filter, expectOne) {
-    return Promise(function(resolv, reject) {
+    return new Promise(function(resolve, reject) {
       if (typeof folter !== 'object') {
         reject({
           message: 'filter needs to be an object containing a filter'
