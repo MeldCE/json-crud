@@ -5,40 +5,42 @@ var rimraf = require('rimraf');
 var deasync = require('deasync');
 var cp = require('node-cp');
 cp.sync = deasync(cp);
+var mkdirp = require('mkdirp');
 
 describe('File JSON DB', function() {
   var testFolder = path.resolve(__dirname, '../testFiles');
+  var tempTestFolder = path.join(testFolder, 'temp');
   // Remove all existing test files
   try {
     fs.accessSync(testFolder, fs.R_OK | fs.W_OK);
+    fs.accessSync(tempTestFolder, fs.R_OK | fs.W_OK);
 
     // Delete current folder
-    rimraf.sync(testFolder);
+    rimraf.sync(tempTestFolder);
   } catch(err) {
     if (err.code !== 'ENOENT') {
       throw err;
     }
   }
 
-  /// Copy folder over
-  cp.sync(path.resolve(__dirname, 'testFiles'), testFolder);
+  // Create the temporary test folder
+  mkdirp.sync(tempTestFolder);
 
   it('should fail when trying to open a file that don\'t have access to',
       function(done) {
-        var file = path.resolve(__dirname, '../testFiles/readonly.json');
-        jsonDb(file).then(function() {
-          fail('Expected promise to reject');
-          done()
-        }, function(err) {
-          expect(err).toEqual(new Error('EACCES: permission denied, access \''
-              + file + '\''));
-          done()
-        });
-      }
-  );
+    var file = path.join(testFolder, 'readonly.json');
+    jsonDb(file).then(function() {
+      fail('Expected promise to reject');
+      done()
+    }, function(err) {
+      expect(err).toEqual(new Error('EACCES: permission denied, access \''
+          + file + '\''));
+      done()
+    });
+  });
 
   it('should be able to retrieve a previously stored value', function(done) {
-    var file = path.resolve(__dirname, '../testFiles/existing.json');
+    var file = path.join(testFolder, 'existing.json');
     jsonDb(file).then(function(db) {
       return db.read('test').then(function(val) {
         expect(val).toBe('stored');
@@ -51,7 +53,7 @@ describe('File JSON DB', function() {
   });
 
   it('should be able to retrieve a previously stored complex value', function(done) {
-    var file = path.resolve(__dirname, '../testFiles/existing.json');
+    var file = path.join(testFolder, 'existing.json');
     jsonDb(file).then(function(db) {
       return db.read('testcomplex').then(function(val) {
         expect(val).toEqual({ value: 'cool', another: 'notcool' });
@@ -64,7 +66,7 @@ describe('File JSON DB', function() {
   });
 
   it('should be able to store a value and retrieve the same value then delete it', function(done) {
-    var file = path.resolve(__dirname, '../testFiles/new.json');
+    var file = path.join(tempTestFolder, 'new.json');
     jsonDb(file).then(function(db) {
       return db.create('test', 'some value').then(function() {
         return db.read('test');

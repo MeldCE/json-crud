@@ -23,16 +23,6 @@ describe('Folder JSON DB', function() {
     }
   }
 
-  // Double check readonly folder exists
-  try {
-    var readonly = path.join(testFolder, 'readonly');
-    fs.accessSync(readonly, fs.R_OK | fs.W_OK);
-  } catch(err) {
-    if (err.code !== 'ENOENT') {
-      mkdirp.sync(readonly, 511 /*0555*/);
-    }
-  }
-
   // Create the temporary test folder
   mkdirp.sync(tempTestFolder);
 
