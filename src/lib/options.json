@@ -2,6 +2,19 @@
   "type": {
     "path": {
       "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "cacheKeys": {
+      "type": "boolean"
+    },
+    "cacheValues": {
+      "type": "boolean"
+    },
+    "cacheKeyValues": {
+      "type": "string",
+      "multiple": true
     }
   }
 }

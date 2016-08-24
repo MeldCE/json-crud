@@ -2,6 +2,9 @@
   "type": {
     "path": {
       "type": "string"
+    },
+    "id": {
+      "type": "string"
     }
   }
 }

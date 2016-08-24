@@ -6,6 +6,11 @@ var deasync = require('deasync');
 var cp = require('node-cp');
 cp.sync = deasync(cp);
 var mkdirp = require('mkdirp');
+var Promise = require('promise');
+
+require('promise/lib/rejection-tracking').enable(
+  {allRejections: true}
+);
 
 describe('File JSON DB', function() {
   var testFolder = path.resolve(__dirname, '../testFiles');
@@ -31,11 +36,11 @@ describe('File JSON DB', function() {
     var file = path.join(testFolder, 'readonly.json');
     jsonDb(file).then(function() {
       fail('Expected promise to reject');
-      done()
+      done();
     }, function(err) {
       expect(err).toEqual(new Error('EACCES: permission denied, access \''
           + file + '\''));
-      done()
+      done();
     });
   });
 
@@ -43,7 +48,7 @@ describe('File JSON DB', function() {
     var file = path.join(testFolder, 'existing.json');
     jsonDb(file).then(function(db) {
       return db.read('test').then(function(val) {
-        expect(val).toBe('stored');
+        expect(val).toEqual({ test: 'stored' });
         done();
       });
     }).catch(function(err) {
@@ -56,7 +61,33 @@ describe('File JSON DB', function() {
     var file = path.join(testFolder, 'existing.json');
     jsonDb(file).then(function(db) {
       return db.read('testcomplex').then(function(val) {
-        expect(val).toEqual({ value: 'cool', another: 'notcool' });
+        expect(val).toEqual({ testcomplex: { value: 'cool', another: 'notcool' } });
+        done();
+      });
+    }).catch(function(err) {
+      fail(err);
+      done();
+    });
+  });
+
+  it('should be able to retrieve a previously stored complex value based of key/value within value', function(done) {
+    var file = path.join(testFolder, 'existing.json');
+    jsonDb(file).then(function(db) {
+      return db.read({ value: 'cool'}).then(function(val) {
+        expect(val).toEqual({ testcomplex: { value: 'cool', another: 'notcool' } });
+        done();
+      });
+    }).catch(function(err) {
+      fail(err);
+      done();
+    });
+  });
+
+  it('should be able to retrieve a previously stored value as the value only', function(done) {
+    var file = path.join(testFolder, 'existing.json');
+    jsonDb(file).then(function(db) {
+      return db.read('test', true).then(function(val) {
+        expect(val).toBe('stored');
         done();
       });
     }).catch(function(err) {
@@ -69,28 +100,28 @@ describe('File JSON DB', function() {
     var file = path.join(tempTestFolder, 'new.json');
     jsonDb(file).then(function(db) {
       return db.create('test', 'some value').then(function() {
-        return db.read('test');
+        return db.read('test', true);
       }).then(function(val) {
         expect(val).toBe('some value');
         delete db;
         return jsonDb(file);
       });
     }).then(function(db) {
-        return db.read('test').then(function(val) {
+        return db.read('test', true).then(function(val) {
           expect(val).toBe('some value');
           return db.delete('test');
         }).then(function(deleted) {
-          expect(deleted).toBe(true);
+          expect(deleted).toEqual(['test']);
           delete db;
           // Reopen DB
           return jsonDb(file);
         });
     }).then(function(db) {
-        return db.read('test').then(function(val) {
+        return db.read('test', true).then(function(val) {
           expect(val).toBe(undefined);
           return db.delete('test');
         }).then(function(deleted) {
-          expect(deleted).toBe(false);
+          expect(deleted).toEqual([]);
           done();
         });
       return Promise.resolve();
@@ -99,4 +130,4 @@ describe('File JSON DB', function() {
       done();
     });
   });
-})
+});
