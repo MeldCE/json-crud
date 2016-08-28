@@ -107,7 +107,7 @@ function processSave(create, args) {
         replace: replace,
         args: args
       });
-    });
+    }.bind(this));
   }.bind(this));
 }
 
@@ -120,8 +120,9 @@ function processSave(create, args) {
  *
  * @param {Boolean} [replace=false] If true, if data already exists for a
  *   given key, that data will be replaced with the given data
- * @param {...*} data Either key-value pairs OR if the key field has been
- *   specified, Object values containing the key value
+ * @param {...*} data Either key-value pairs, if the key field has been
+ *   specified, Object values containing the key value, or a single Array
+ *   containing one of the previous two options
  *
  * @returns {Promise} A promise that will resolve with an array containing
  *   keys of the inserted data.
@@ -137,8 +138,9 @@ function doCreate() {
  * key-value parameter pairs, OR if the key field has been specified Object
  * values. New values will be merge into any existing values.
  *
- * @param {...*} data Either key-value pairs OR if the key field has been
- *   specified, Object values containing the key value
+ * @param {...*} data Either key-value pairs, if the key field has been
+ *   specified, Object values containing the key value, or a single Array
+ *   containing one of the previous two options
  *
  * @returns {Promise} A promise that will resolve with an array containing
  *   keys of the updated data.
@@ -146,7 +148,7 @@ function doCreate() {
 function doUpdate() {
   console.log('update called');
   
-  return processSave.call(this, true, arguments).then(this.save);
+  return processSave.call(this, false, arguments).then(this.save);
 }
 
 var logicalOperators = ['$and', '$or', '$not', '$nor'];

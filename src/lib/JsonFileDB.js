@@ -155,7 +155,7 @@ function has(key) {
  *
  * @this JsonFileDB
  *
- * @param {Key|Key[]|Object} filter Filter to use to find values to retrieve
+ * @param {Key|Key[]|Object} [filter] Filter to use to find values to retrieve
  * @param {Boolean} [expectSingle] If true, the single value will be returned
  *   as only the value (as opposed to the normal key/value Object. If a single
  *   value is not going to be returned, the Promise will reject with an error.
@@ -164,7 +164,7 @@ function has(key) {
  *   key(s)/filter(s).
  */
 function doRead(filter, expectSingle) {
-  console.log('doRead called');
+  console.log('doRead called', filter);
   return new Promise(function(resolve, reject) {
     var keys, dataPromise;
     if (common.keyTypes.indexOf(typeof filter) !== -1) {
@@ -180,6 +180,15 @@ function doRead(filter, expectSingle) {
       }
       keys = filter;
     } else if (typeof filter === 'undefined') {
+      // Return all values
+      if (this.cacheData) {
+        resolve(this.data);
+      } else {
+        readData.call(this).then(function(data) {
+          resolve(data);
+        });
+      }
+      return;
     } else if (typeof filter !== 'object') {
       reject(new Error('filter needs to be a key, an array of keys or a '
           + 'filter Object'));
