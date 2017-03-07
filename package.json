@@ -1,6 +1,6 @@
 {
   "name": "json-crud",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A simple CRUD JSON database using either a JSON file or a folder of JSON files.",
   "main": "lib/json-crud.js",
   "types": "src/typings/json-crud.d.ts",
