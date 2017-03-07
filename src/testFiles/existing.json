@@ -1,0 +1,43 @@
+{
+  "test": "stored",
+  "testcomplex": {
+    "value": "cool",
+    "another": "notcool"
+  },
+  "complex1": {
+    "someVar": "some",
+    "another": "another",
+    "numeric": 1,
+    "array": ["val1"]
+  },
+  "complex2": {
+    "someVar": "some",
+    "another": "another",
+    "numeric": 2,
+    "array": ["val1", "val2"]
+  },
+  "complex3": {
+    "someVar": "some",
+    "another": "else",
+    "numeric": 3,
+    "array": ["val1", "val3"]
+  },
+  "complex4": {
+    "someVar": "not",
+    "another": "else",
+    "numeric": 4,
+    "array": ["val2", "val3", "val4"]
+  },
+  "complex5": {
+    "someVar": "not",
+    "another": "else",
+    "numeric": 5,
+    "array": ["val2"]
+  },
+  "complex6": {
+    "someVar": "not",
+    "another": "another",
+    "numeric": 2,
+    "array": ["val1", "val2"]
+  }
+}

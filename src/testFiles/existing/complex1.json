@@ -1,0 +1,6 @@
+{
+  "someVar": "some",
+  "another": "another",
+  "numeric": 1,
+  "array": ["val1"]
+}
