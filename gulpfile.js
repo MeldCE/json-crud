@@ -154,12 +154,12 @@ gulp.task('mddocs', ['lint'], function() {
       .pipe(gulp.dest(paths.build));
 });
 
-/*gulp.task('mddocs', ['lint'], function() {
+gulp.task('mddocs', ['lint'], function() {
   return gulp.src(paths.src)
       .pipe(documentation({ format: 'md' }))
       //.pipe(concat(paths.mddoc))
       .pipe(gulp.dest(paths.build));
-});*/
+});
 
 gulp.task('readme', ['mddocs'], function() {
   return gulp.src(['src/README.md', path.join(paths.build, paths.mddoc)])

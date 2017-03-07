@@ -20,10 +20,15 @@ var optionsSchema = require('./options.json');
  *
  * @param {String} [file] Path to file/folder to contain the JSON database
  * @param {Object} [options] Object containing the options for the database.
- *        (@see (@link options)).
+ * @param {String} [options.path] Path to file/folder to contain JSON database
+ *   if not given as first argument
+ * @param {String} [options.id] Field of data objects to be used as the key
+ * @param {Boolean} [options.cacheKeys] Cache the keys of the objects in the
+ *   database
+ * @param {Boolean} [options.cacheValues] Cache the objects in the database
  *
- * @returns {Promise} A promise that will resolve to a JsonDB if everything
- *          checks out
+ * @returns {Promise<JsonDBInstance>} A promise that will resolve to a JsonDB
+ *   instance if everything checks out
  */
 function jsonDB() {
   var args = Array.prototype.slice.call(arguments);
