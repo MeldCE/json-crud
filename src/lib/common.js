@@ -1,6 +1,5 @@
 "use strict";
 
-var merge = require('merge');
 var Promise = require('promise');
 
 var keyTypes = exports.keyTypes = ['string', 'number'];
@@ -21,7 +20,7 @@ var keyTypes = exports.keyTypes = ['string', 'number'];
 function processSave(create, args) {
   args = Array.prototype.slice.call(args);
   return new Promise(function(resolve, reject) {
-    var newData = {}, ids = [], replace, i;
+    var ids = [], replace, i;
     // Check if we have a replace flag
     if (create) {
       if (typeof args[0] === 'boolean') {
@@ -33,6 +32,10 @@ function processSave(create, args) {
 
     if (!args.length) {
       return reject(new Error('No data given'));
+    }
+
+    if (args.length === 1 && args[0] instanceof Array) {
+      args = args[0];
     }
 
     var promise;
@@ -57,7 +60,7 @@ function processSave(create, args) {
 
         for (i = 0; i < args.length; i++) {
           if (!args[i] instanceof Object) {
-            reject(new Error('Create value ' + (i + 1) 
+            reject(new Error('Create value ' + (i + 1)
                 + ' was not an object (' + typeof args[i][this.options.id]
                 + ' given)'));
             return;
@@ -129,7 +132,7 @@ function processSave(create, args) {
  */
 function doCreate() {
   console.log('create called');
-  
+
   return processSave.call(this, true, arguments).then(this.save);
 }
 
@@ -147,57 +150,63 @@ function doCreate() {
  */
 function doUpdate() {
   console.log('update called');
-  
+
   return processSave.call(this, false, arguments).then(this.save);
 }
 
-var logicalOperators = ['$and', '$or', '$not', '$nor'];
+//TODO var logicalOperators = ['$and', '$or', '$not', '$nor'];
 
 /**
  * Checks if the given data hits on the given filter
  *
  * @param {*} data Data to check against filter
  * @param {Object} filter Filter to check the data against
- * @param {Boolean} [or] Whether all tests should match (falsey) or just one
- *   (truey).
  *
  * @returns {Boolean} Whether the data matches the filter or not.
  */
-function runFilter(data, filter, or) {
-  var object = (typeof data === 'object');
+function runFilter(data, filter) {
   var k, key, keys = Object.keys(filter), keysLength = keys.length;
-  var operator, operand;
+  var i;
 
   if (!Object.keys(filter).length) {
     return true;
   }
-  
-  for (k = 0; k < keysLength; k++) {
+
+  keyCheck: for (k = 0; k < keysLength; k++) {
     key = keys[k];
 
-    // Ignore logical operators initially
-    if (logicalOperators.indexOf(key) !== -1) {
-      return;
-    }
-
     // Match
-    if (key.startsWith('$')) { // TODO || typeof filter[key] === 'object') {
+    if (key.startsWith('$')) {
       //if (key.startsWith(
-    } else if (object) {
-      if ((data[key] instanceof Array && data[key].indexOf(filter[key]) !== -1)
-          || data[key] == filter[key]) {
-        if (or) {
-          return true;
-        }
-      } else {
-        if (!or) {
+      switch (key) {
+        case '$or':
+          for (i = 0; i < filter[key].length; i++) {
+            if (runFilter(data, filter[key][i])) {
+              continue keyCheck;
+            }
+          }
           return false;
-        }
+        case '$and':
+          for (i = 0; i < filter[key].length; i++) {
+            if (!runFilter(data, filter[key][i])) {
+              return false;
+            }
+          }
+          break;
+        case '$not':
+          if(runFilter(data, filter[key])) {
+            return false;
+          }
+          break;
       }
-    } else {
-      if (!or) {
+    } else if (typeof data === 'object') {
+      if (!((data[key] instanceof Array
+          && data[key].indexOf(filter[key]) !== -1)
+          || data[key] === filter[key])) {
         return false;
       }
+    } else {
+      return false;
     }
   }
 
@@ -219,8 +228,10 @@ exports.runFilter = runFilter;
  */
 exports.processFilter = function processFilter(data, filter, callback) {
   var keys = Object.keys(data), callbacks = [];
+  console.log('processFilter called', data, filter, keys);
 
   keys.forEach(function(id) {
+    console.log('checking filter against', id);
     if (runFilter(data[id], filter)) {
       callbacks.push(callback(id, data[id]));
     }

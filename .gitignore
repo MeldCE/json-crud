@@ -11,4 +11,4 @@ npm-debug.log*
 .coverrun
 coverage
 save
-test*
+./test*

@@ -2,7 +2,6 @@
 
 var fs = require('fs');
 var path = require('path');
-var assert = require('assert');
 var skemer = require('skemer');
 var Promise = require('promise');
 
@@ -42,7 +41,7 @@ function jsonDB() {
       // Make file required
       optionsSchema.type.path.required = true;
     }
-    
+
     // Check for options
     if (args[0] instanceof Object) {
       try {

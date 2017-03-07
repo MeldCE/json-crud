@@ -141,4 +141,242 @@ describe('Folder JSON DB', function() {
       done();
     });
   });
+
+  describe('complex filters', function() {
+    var db;
+
+    beforeAll(function(done) {
+      var file = path.join(testFolder, 'existing');
+
+      jsonDb(file).then(function(database) {
+        void 0;
+        db = database;
+      }, fail).finally(done);
+    });
+
+    it('should treat multiple specified values as logical AND',
+        function(done) {
+      db.read({ someVar: 'some', another: 'another' }).then(function(values) {
+
+        expect(values).toEqual(jasmine.any(Object));
+        expect(Object.keys(values).length).toEqual(2);
+
+        Object.keys(values).forEach(function(value) {
+          expect(values[value]).toEqual(jasmine.any(Object));
+          expect(values[value].someVar).toEqual('some');
+          expect(values[value].another).toEqual('another');
+        });
+      }).catch(fail).finally(done);
+    });
+
+    describe('$or', function() {
+      it('should logical OR tests in $or array', function(done) {
+        db.read({ $or: [{someVar: 'some'}, {another: 'another'}] })
+            .then(function(values) {
+
+          void 0;
+          expect(values).toEqual(jasmine.any(Object));
+          expect(Object.keys(values).length).toEqual(4);
+
+              void 0;
+          Object.keys(values).forEach(function(value) {
+            expect(values[value]).toEqual(jasmine.any(Object));
+            expect(values[value].someVar === 'some'
+                || values[value].another === 'another').toEqual(true);
+          });
+
+              void 0;
+        }).catch(fail).finally(done);
+      });
+    });
+
+    describe('$and', function() {
+      it('should logical AND tests in $and array', function(done) {
+        db.read({ $and: [{someVar: 'some'}, {another: 'another'}] })
+            .then(function(values) {
+          expect(values).toEqual(jasmine.any(Object));
+          expect(Object.keys(values).length).toEqual(2);
+
+          Object.keys(values).forEach(function(value) {
+            expect(values[value]).toEqual(jasmine.any(Object));
+            expect(values[value].someVar).toEqual('some');
+            expect(values[value].another).toEqual('another');
+          });
+
+        }).catch(fail).finally(done);
+      });
+    });
+
+    it('should be able to have nested logical statements', function(done) {
+      db.read({ $or: [
+        {$and: [{someVar: 'some'}, {another: 'else'}]},
+        {$and: [{someVar: 'not'}, {another: 'another'}]}
+      ] }).then(function(values) {
+
+        void 0;
+        expect(values).toEqual(jasmine.any(Object));
+        expect(Object.keys(values).length).toEqual(2);
+
+            void 0;
+        Object.keys(values).forEach(function(value) {
+          expect(values[value]).toEqual(jasmine.any(Object));
+          expect(['some', 'not'].indexOf(values[value].someVar)).not.toEqual(-1);
+          if (values[value].someVar === 'some') {
+            expect(values[value].another).toEqual('else');
+          } else {
+            expect(values[value].another).toEqual('another');
+          }
+        });
+
+            void 0;
+      }).catch(fail).finally(done);
+    });
+
+    describe('$not', function() {
+      it('should invert results of given test', function(done) {
+        db.read({ $not: { someVar: 'some' } }).then(function(values) {
+          void 0;
+          expect(Object.keys(values).length).toEqual(5);
+          Object.keys(values).forEach(function(value) {
+            if (typeof value === 'object' && value.someVar) {
+              expect(value.someVar).not.toEqual('some');
+            }
+          });
+        }, fail).finally(done);
+      });
+    });
+  });
+
+  xdescribe('comparisons operators', () => {
+    var db;
+
+    beforeAll(function(done) {
+      var file = path.join(testFolder, 'existing');
+
+      jsonDb(file).then(function(database) {
+        void 0;
+        db = database;
+      }, fail).finally(done);
+    });
+
+    describe('$eq', () => {
+      it('should test for equality', (done) => {
+        db.read({ someVar: { $eq: 'some'} }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(value.someVar).toEqual('some');
+          });
+        }, fail).finally(done);
+      });
+
+      it('should match if the value is in an array', (done) => {
+        db.read({ array: { $eq: 'val1'} }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(value.array.indexOf('val1')).not.toEqual(-1);
+          });
+        }, fail).finally(done);
+      });
+    });
+
+    describe('$ne', () => {
+      it('should test for inequality', (done) => {
+        db.read({ someVar: { $ne: 'some'} }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(value.someVar).not.toEqual('some');
+          });
+        }, fail).finally(done);
+      });
+
+      it('should not match if the value is in an array', (done) => {
+        db.read({ array: { $ne: 'val1'} }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(value.array.indexOf('val1')).toEqual(-1);
+          });
+        }, fail).finally(done);
+      });
+    });
+
+    describe('$gt', () => {
+      it('should test for mathmatical greatness', (done) => {
+        db.read({ numeric: { $gt: 3 } }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(value.numeric).toBeGreaterThan(3);
+          });
+        }, fail).finally(done);
+      });
+    });
+
+    describe('$gte', () => {
+      it('should test for mathmatical equality or greatness', (done) => {
+        db.read({ numeric: { $gte: 3 } }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(value.numeric).toBeGreaterThan(2);
+          });
+        }, fail).finally(done);
+      });
+    });
+
+    describe('$lt', () => {
+      it('should test for mathmatical lessness', (done) => {
+        db.read({ numeric: { $lt: 3 } }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(value.numeric).toBeLessThan(3);
+          });
+        }, fail).finally(done);
+      });
+    });
+
+    describe('$lte', () => {
+      it('should test for mathmatical lessness', (done) => {
+        db.read({ numeric: { $lte: 3 } }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(value.numeric).toBeLessThan(4);
+          });
+        }, fail).finally(done);
+      });
+    });
+
+    describe('$in', () => {
+      it('should test if specified field value is in array of values',
+          (done) => {
+        var valuesArray = [1, 2, 'not'];
+        db.read({ numeric: { $in: valuesArray } }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(valuesArray.indexOf(value.numeric)).not.toEqual(-1);
+          });
+        }, fail).finally(done);
+      });
+    });
+
+    describe('$nin', () => {
+      it('should test if specified field value is not in array of values',
+          (done) => {
+        var valuesArray = [1, 2, 'not'];
+        db.read({ numeric: { $nin: valuesArray } }).then(function(values) {
+          expect(Object.keys(values).length).toBeTruthy();
+          Object.keys(values).forEach(function(value) {
+            expect(value).toEqual(jasmine.any(Object));
+            expect(valuesArray.indexOf(value.numeric)).toEqual(-1);
+          });
+        }, fail).finally(done);
+      });
+    });
+  });
 });

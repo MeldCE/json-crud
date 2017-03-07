@@ -28,6 +28,7 @@ var paths = {
   docs: 'docs/',
   src: 'src/lib/**/*.js',
   testDir: 'src/spec',
+  srcTestFiles: 'src/testFiles',
   testSrc: 'src/*.spec.js',
   srcTests: 'src/spec/**/*.spec.js',
   srcTestLib: 'src/spec/lib/*.js',
@@ -174,7 +175,7 @@ gulp.task('readme', ['mddocs'], function() {
       .pipe(gulp.dest('./'));
 });
 
-gulp.task('copy', ['jasmine', 'copy:jasmine.json'], function() {
+gulp.task('copy', ['jasmine', 'copy:jasmine.json', 'copy:testFiles'], function() {
   return gulp.src([paths.src, paths.srcTests, paths.srcTestLib], { base: 'src' })
     .pipe(stripDebug())
     .pipe(gulp.dest(paths.dist));
@@ -182,6 +183,11 @@ gulp.task('copy', ['jasmine', 'copy:jasmine.json'], function() {
 
 gulp.task('copy:jasmine.json', ['jasmine'], function() {
   return gulp.src(paths.srcJasmineJson, { base: 'src' })
+    .pipe(gulp.dest(paths.dist));
+});
+
+gulp.task('copy:testFiles', [], function() {
+  return gulp.src(paths.srcTestFiles, { base: 'src' })
     .pipe(gulp.dest(paths.dist));
 });
 
