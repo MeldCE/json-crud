@@ -8,6 +8,8 @@ cp.sync = deasync(cp);
 var mkdirp = require('mkdirp');
 var Promise = require('promise');
 
+var unlink = Promise.denodeify(fs.unlink);
+
 require('promise/lib/rejection-tracking').enable(
   {allRejections: true}
 );
@@ -30,6 +32,10 @@ describe('File JSON DB', function() {
 
   // Create the temporary test folder
   mkdirp.sync(tempTestFolder);
+
+  it('should fail when given bad options', function(done) {
+    jsonDb({}).then(fail).finally(done);
+  });
 
   it('should fail when trying to open a file that don\'t have access to',
       function(done) {
@@ -122,13 +128,48 @@ describe('File JSON DB', function() {
           return db.delete('test');
         }).then(function(deleted) {
           expect(deleted).toEqual([]);
-          done();
+          delete db;
+          return Promise.resolve();
         });
       return Promise.resolve();
+    }).then(function() {
+      // Delete the database
+      return unlink(file);
     }).catch(function(err) {
       fail(err.stack);
-      done();
-    });
+    }).finally(done);
+  });
+
+  it('should accept the path in an options object', function(done) {
+    var file = path.join(tempTestFolder, 'new.json');
+    jsonDb({
+      path: file
+    }).then(function(db) {
+      delete db;
+      return unlink(file);
+    }).catch(fail).finally(done);
+  });
+
+  it('should be able to store and retrieve data using an id field',
+      function(done) {
+    var file = path.join(tempTestFolder, 'new.json');
+    jsonDb({
+      path: file,
+      id: '_id'
+    }).then(function(db) {
+      return db.create([ {
+        _id: 12,
+        astring: 'string'
+      } ]).then(function() {
+        return db.read(12);
+      }).then(function(results) {
+        expect(results[12]).toBeDefined();
+        return Promise.resolve();
+      }).then(function() {
+        delete db;
+        return unlink(file);
+      });
+    }).catch(fail).finally(done);
   });
 
   describe('complex filters', function() {
@@ -138,7 +179,6 @@ describe('File JSON DB', function() {
       var file = path.join(testFolder, 'existing.json');
 
       jsonDb(file).then(function(database) {
-        console.log('got database');
         db = database;
       }, fail).finally(done);
     });
@@ -163,18 +203,14 @@ describe('File JSON DB', function() {
         db.read({ $or: [{someVar: 'some'}, {another: 'another'}] })
             .then(function(values) {
 
-          console.log('hwew got values', values, Object.keys(values).length);
           expect(values).toEqual(jasmine.any(Object));
           expect(Object.keys(values).length).toEqual(4);
 
-              console.log('sdfsdf');
           Object.keys(values).forEach(function(value) {
             expect(values[value]).toEqual(jasmine.any(Object));
             expect(values[value].someVar === 'some'
                 || values[value].another === 'another').toEqual(true);
           });
-
-              console.log('adsfsd');
         }).catch(fail).finally(done);
       });
     });
@@ -202,11 +238,9 @@ describe('File JSON DB', function() {
         {$and: [{someVar: 'not'}, {another: 'another'}]}
       ] }).then(function(values) {
 
-        console.log('nested got values', values, Object.keys(values).length);
         expect(values).toEqual(jasmine.any(Object));
         expect(Object.keys(values).length).toEqual(2);
 
-            console.log('sdfsdf');
         Object.keys(values).forEach(function(value) {
           expect(values[value]).toEqual(jasmine.any(Object));
           expect(['some', 'not'].indexOf(values[value].someVar)).not.toEqual(-1);
@@ -216,15 +250,12 @@ describe('File JSON DB', function() {
             expect(values[value].another).toEqual('another');
           }
         });
-
-            console.log('adsfsd');
       }).catch(fail).finally(done);
     });
 
     describe('$not', function() {
       it('should invert results of given test', function(done) {
         db.read({ $not: { someVar: 'some' } }).then(function(values) {
-          console.log('got values', values);
           expect(Object.keys(values).length).toEqual(5);
           Object.keys(values).forEach(function(value) {
             if (typeof value === 'object' && value.someVar) {
@@ -236,14 +267,13 @@ describe('File JSON DB', function() {
     });
   });
 
-  xdescribe('comparisons operators', () => {
+  describe('comparisons operators', () => {
     var db;
 
     beforeAll(function(done) {
       var file = path.join(testFolder, 'existing.json');
 
       jsonDb(file).then(function(database) {
-        console.log('got database');
         db = database;
       }, fail).finally(done);
     });
@@ -252,9 +282,9 @@ describe('File JSON DB', function() {
       it('should test for equality', (done) => {
         db.read({ someVar: { $eq: 'some'} }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(value.someVar).toEqual('some');
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(values[v].someVar).toEqual('some');
           });
         }, fail).finally(done);
       });
@@ -262,9 +292,9 @@ describe('File JSON DB', function() {
       it('should match if the value is in an array', (done) => {
         db.read({ array: { $eq: 'val1'} }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(value.array.indexOf('val1')).not.toEqual(-1);
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(values[v].array.indexOf('val1')).not.toEqual(-1);
           });
         }, fail).finally(done);
       });
@@ -274,9 +304,9 @@ describe('File JSON DB', function() {
       it('should test for inequality', (done) => {
         db.read({ someVar: { $ne: 'some'} }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(value.someVar).not.toEqual('some');
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(values[v].someVar).not.toEqual('some');
           });
         }, fail).finally(done);
       });
@@ -284,9 +314,9 @@ describe('File JSON DB', function() {
       it('should not match if the value is in an array', (done) => {
         db.read({ array: { $ne: 'val1'} }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(value.array.indexOf('val1')).toEqual(-1);
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(values[v].array.indexOf('val1')).toEqual(-1);
           });
         }, fail).finally(done);
       });
@@ -296,9 +326,9 @@ describe('File JSON DB', function() {
       it('should test for mathmatical greatness', (done) => {
         db.read({ numeric: { $gt: 3 } }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(value.numeric).toBeGreaterThan(3);
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(values[v].numeric).toBeGreaterThan(3);
           });
         }, fail).finally(done);
       });
@@ -308,9 +338,9 @@ describe('File JSON DB', function() {
       it('should test for mathmatical equality or greatness', (done) => {
         db.read({ numeric: { $gte: 3 } }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(value.numeric).toBeGreaterThan(2);
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(values[v].numeric).toBeGreaterThan(2);
           });
         }, fail).finally(done);
       });
@@ -320,21 +350,21 @@ describe('File JSON DB', function() {
       it('should test for mathmatical lessness', (done) => {
         db.read({ numeric: { $lt: 3 } }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(value.numeric).toBeLessThan(3);
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(values[v].numeric).toBeLessThan(3);
           });
         }, fail).finally(done);
       });
     });
 
     describe('$lte', () => {
-      it('should test for mathmatical lessness', (done) => {
+      it('should test for mathmatical equality or lessness', (done) => {
         db.read({ numeric: { $lte: 3 } }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(value.numeric).toBeLessThan(4);
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(values[v].numeric).toBeLessThan(4);
           });
         }, fail).finally(done);
       });
@@ -346,9 +376,9 @@ describe('File JSON DB', function() {
         var valuesArray = [1, 2, 'not'];
         db.read({ numeric: { $in: valuesArray } }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(valuesArray.indexOf(value.numeric)).not.toEqual(-1);
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(valuesArray.indexOf(values[v].numeric)).not.toEqual(-1);
           });
         }, fail).finally(done);
       });
@@ -360,9 +390,9 @@ describe('File JSON DB', function() {
         var valuesArray = [1, 2, 'not'];
         db.read({ numeric: { $nin: valuesArray } }).then(function(values) {
           expect(Object.keys(values).length).toBeTruthy();
-          Object.keys(values).forEach(function(value) {
-            expect(value).toEqual(jasmine.any(Object));
-            expect(valuesArray.indexOf(value.numeric)).toEqual(-1);
+          Object.keys(values).forEach(function(v) {
+            expect(values[v]).toEqual(jasmine.any(Object));
+            expect(valuesArray.indexOf(values[v].numeric)).toEqual(-1);
           });
         }, fail).finally(done);
       });

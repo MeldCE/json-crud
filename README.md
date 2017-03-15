@@ -1,4 +1,4 @@
-JSON Crud v0.2.0
+JSON Crud v0.3.0
 =========================
 A simple CRUD JSON database using either a JSON file or a folder of JSON files.
 
@@ -113,6 +113,10 @@ declare namespace JsonDB {
      *   deleted
      */
     delete: (filter: Filter | true) => Promise;
+    /**
+     * Closes the CRUD database instance
+     */
+    close: () => void;
   };
 
   export interface Options {

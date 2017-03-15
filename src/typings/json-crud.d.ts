@@ -81,6 +81,10 @@ declare namespace JsonDB {
      *   deleted
      */
     delete: (filter: Filter | true) => Promise;
+    /**
+     * Closes the CRUD database instance
+     */
+    close: () => void;
   };
 
   export interface Options {

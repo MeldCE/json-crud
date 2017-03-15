@@ -1,6 +1,5 @@
 'use strict';
 
-var assert = require('assert');
 var merge = require('merge');
 var fs = require('fs');
 var path = require('path');
@@ -12,8 +11,6 @@ var readFile = Promise.denodeify(fs.readFile);
 var unlink = Promise.denodeify(fs.unlink);
 var access = Promise.denodeify(fs.access);
 var readdir = Promise.denodeify(fs.readdir);
-
-var allowedTypes = ['string', 'number'];
 
 /**
  * Creates a JSON folder database instance
@@ -32,7 +29,22 @@ module.exports = function JsonFolderDB(file, options) {
 
   // TODO Attach listener on to file
   if (options.listen) {
-    fs.watch(file, { persistent: true }, listener);
+    fs.watch(file, {
+      persistent: true,
+      recursive: true
+    }, listener);
+  }
+
+  /**
+   * Cleans up after the CRUD instance. Should be called just before the
+   * instance is deleted
+   *
+   * @returns {undefined}
+   */
+  function close() {
+    if (options.listen) {
+      fs.unwatch(file, listener);
+    }
   }
 
   /** @private
@@ -57,7 +69,6 @@ module.exports = function JsonFolderDB(file, options) {
   function readData(id) {
     var filename = getFilename(id);
 
-    //TODO Retrieve all data
     if (typeof id === 'undefined') {
       var keysPromise;
       if (options.cacheKeys) {
@@ -67,13 +78,25 @@ module.exports = function JsonFolderDB(file, options) {
       }
       return keysPromise.then(function(keys) {
         return Promise.reject(new Error('TODO Read all data'));
+        var promises = [];
+        var data = {};
+
+        keys.forEach(function(key) {
+          promises.push(readData(key).then(function(keyData) {
+            data[key] = keyData;
+          }));
+        });
+
+        return Promise.all(promises).then(function() {
+          return Promise.resolve(data);
+        });
       });
     } else {
       // Check if file exists
       return access(filename, fs.R_OK | fs.W_OK).then(function() {
         return readFile(filename).then(function(buffer) {
           try {
-            return JSON.parse(buffer);
+            return Promise.resolve(JSON.parse(buffer));
           } catch (err) {
             return Promise.reject(err);
           }
@@ -143,7 +166,7 @@ module.exports = function JsonFolderDB(file, options) {
    */
   function save(data) {
     console.log('save', data, arguments);
-    var cData, args = data.args;
+    var args = data.args;
 
     if (options.cacheData) {
       let saves = [], i;
@@ -405,7 +428,7 @@ module.exports = function JsonFolderDB(file, options) {
    */
   function doDelete(filter) {
     return new Promise(function(resolve, reject) {
-      var i, data, keysPromise;
+      var keysPromise;
 
       if (filter === true) {
         // Delete all
@@ -437,7 +460,7 @@ module.exports = function JsonFolderDB(file, options) {
 
         filter.forEach(function(id) {
           if (keys.indexOf(id) !== -1) {
-            // XXX Remove once file watch implemented
+            // TODO XXX Remove once file watch implemented
             if (options.cacheValues) {
               delete cachedData[id];
             }
@@ -454,19 +477,6 @@ module.exports = function JsonFolderDB(file, options) {
     });
   }
 
-
-  /** @private
-   * Returns the ids of the items that much the given filter
-   *
-   * @param {Object} filter Object containing the filter
-   *        (@see (@link filterSchema)).
-   *
-   * @returns {Promise} A promise that will resolve to an array of ids that much
-   *          the given filter
-   */
-  function idsFromFilter(filter) {
-  }
-
   /** @private
    * Called when the data file changes or is renamed
    *
@@ -478,11 +488,13 @@ module.exports = function JsonFolderDB(file, options) {
   function listener(event, filename) {
     if (event == 'rename') {
     } else {
-      // Reload file
-      cachedData = require(file);
+      if (filename.match(/\.json$/)) {
+        // Reload file
+        cachedData = require(filename);
+      }
     }
   }
 
   return common.newCrud(save, doRead,
-      readKeys, doDelete, options);
+      readKeys, doDelete, close, options);
 };
