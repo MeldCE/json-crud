@@ -4,136 +4,66 @@ var Promise = require('promise');
 
 var keyTypes = exports.keyTypes = ['string', 'number'];
 
-
-
-
-/**@private
- * Checks  the parameters for both the create and update functions.
- *
- * @param {Boolean} create If true, this function will check for the replace
- *   Boolean and ensure that data for a given key does not already exist if
- *   the replace Boolean is not given or not true
- * @param {Arguments} args Arugments to process
- *
- * @returns {Promise} A promise that will resolve to an Object containing
- */
-function processSave(create, args) {
-  args = Array.prototype.slice.call(args);
-  return new Promise(function(resolve, reject) {
-    var ids = [], replace, i;
-    // Check if we have a replace flag
-    if (create) {
-      if (typeof args[0] === 'boolean') {
-        replace = args.shift();
-      } else {
-        replace = false;
-      }
-    }
-
-    if (!args.length) {
-      return reject(new Error('No data given'));
-    }
-
-    if (args.length === 1 && args[0] instanceof Array) {
-      args = args[0];
-    }
-
-    var promise;
-    if (replace === false) {
-      console.log('getting keys');
-      promise = this.getKeys();
-    } else {
-      promise = Promise.resolve();
-    }
-
-    promise.then(function(existingKeys) {
-      console.log('existing keys is', existingKeys, this.options);
-      // Check the arguments are all objects containing the id or are key
-      // value pairs
-      var keys = false;
-      if (args[0] instanceof Object) {
-        if (!this.options.id) {
-          reject(new Error('id field must be given in options to be able '
-              + 'to use create without an id'));
-          return;
-        }
-
-        for (i = 0; i < args.length; i++) {
-          if (!args[i] instanceof Object) {
-            reject(new Error('Create value ' + (i + 1)
-                + ' was not an object (' + typeof args[i][this.options.id]
-                + ' given)'));
-            return;
-          } else if (keyTypes.indexOf(typeof args[i][this.options.id]) === -1) {
-            reject(new Error('Invalid id value for value ' + (i + 1)
-                + ' (' + typeof args[i][this.options.id] + ' given)'));
-            return;
-          } else if (replace === false
-              && existingKeys.indexOf(args[i][this.options.id]) !== -1) {
-            reject(new Error('Value for ' + args[i][this.options.id]
-                + ' already exists'));
-            return;
-          }
-
-          ids.push(args[i][this.options.id]);
-        }
-      } else if (args.length === 1) {
-        reject(new Error('Non-object value must be given with a key value'));
-        return;
-      } else {
-        keys = true;
-
-        if (args.length % 2) {
-          reject(new Error('Uneven number of key/value arguments given'
-              + ' (' + args.length + ' given)'));
-          return;
-        }
-
-        for (i = 0; i < args.length; i = i + 2) {
-          if (keyTypes.indexOf(typeof args[i]) === -1) {
-            reject(new Error('Invalid id value for key ' + (i + 1)
-                + ' (' + typeof args[i] + ' given)'));
-            return;
-          } else if (replace === false
-              && existingKeys.indexOf(args[i]) !== -1) {
-            reject(new Error('Value for ' + args[i]
-                + ' already exists'));
-            return;
-          }
-
-          ids.push(args[i]);
-        }
-      }
-
-      resolve({
-        keys: keys,
-        replace: replace,
-        args: args
-      });
-    }.bind(this));
-  }.bind(this));
-}
-
 /**
- * Inserts data into the JSON database. Data can either be given as
- * key-value parameter pairs, OR if the key field has been specified Object
- * values. This function will fail if data was a given key already exists
- * unless a Boolean is given for the first parameter, in which case, any
- * data for an existing key will be replaced.
+ * Inserts data into the JSON database.
  *
- * @param {Boolean} [replace=false] If true, if data already exists for a
- *   given key, that data will be replaced with the given data
- * @param {...*} data Either key-value pairs, if the key field has been
- *   specified, Object values containing the key value, or a single Array
- *   containing one of the previous two options
+ * @param {Array|Object} data Either an object of key-value pairs, an array
+ *   containing key/value pairs ([key, value,...]) or, if the key field has
+ *   been specified, an array of object values each with the key field set
  *
  * @returns {Promise} A promise that will resolve with an array containing
- *   keys of the inserted data.
+ *   keys or errors in creating the data of the inserted data.
  */
-function doCreate() {
-  console.log('create called');
+function doCreate(data) {
+  console.log('create called', data);
 
-  return processSave.call(this, true, arguments).then(this.save);
+  var i, keys = false;
+
+  if (data instanceof Array) {
+    // Check if a key is the first element
+    if (keyTypes.indexOf(typeof data[0]) !== -1) {
+      // Check for an even amount of elements
+      if (data.length % 2) {
+        return Promise.reject(new Error('uneven number of key/values given to create'));
+      }
+
+      // Check every second item are keys
+      for (i = 2; i < data.length; i = i + 2) {
+        if (keyTypes.indexOf(typeof data[i]) === -1) {
+          return Promise.reject(new Error('Invalid key value for key ' + (i + 1)
+              + ' (' + typeof data[i] + ' given)'));
+        }
+      }
+
+      keys = true;
+    } else {
+      if (!this.options.id) {
+        return Promise.reject('Can\'t give an array of data objects if not key has been specified');
+      }
+
+      // Check if each object value has or doesn't have an id
+      for (i = 0; i < data.length; i++) {
+        if (typeof data[i][this.options.id] === 'undefined') {
+          return Promise.reject(new Error('Can\'t have objects in array without a key'));
+        }
+      }
+    }
+
+    return this.save.call(this, {
+      keys: keys,
+      data: data,
+      replace: false
+    });
+  } else if (data instanceof Object) {
+    // Find and update
+    return this.save.call(this, {
+      keys: true,
+      data: data,
+      replace: false
+    });
+  } else {
+    return Promise.reject(new Error('Unknown data type given'));
+  }
 }
 
 /**
@@ -141,20 +71,91 @@ function doCreate() {
  * key-value parameter pairs, OR if the key field has been specified Object
  * values. New values will be merge into any existing values.
  *
- * @param {...*} data Either key-value pairs, if the key field has been
- *   specified, Object values containing the key value, or a single Array
- *   containing one of the previous two options
+ * @param {Object|Object[]|Array} data Either:
+ *   - an array of key-value pairs,
+ *   - an object containing the data to update
+ *   - object value(s) containing the key value (if a key has been specified)
+ * @param {Object|true} [filter] If a object containing the data to update, a
+ *   filter to select the items that should be updated, or if object value(s)
+ *   have been given, true if the existing items should be replaced instead of
+ *   merged into
  *
  * @returns {Promise} A promise that will resolve with an array containing
  *   keys of the updated data.
  */
-function doUpdate() {
-  console.log('update called');
+function doUpdate(data, filter) {
+  console.log('update called', data, filter);
 
-  return processSave.call(this, false, arguments).then(this.save);
+  var i, keys = false;
+
+  if (data instanceof Array) {
+    // Check if a key is the first element
+    if (keyTypes.indexOf(typeof data[0]) !== -1) {
+      // Check for an even amount of elements
+      if (data.length % 2) {
+        return Promise.reject(new Error('uneven number of key/values given to update'));
+      }
+
+      // Check every second item are keys
+      for (i = 2; i < data.length; i = i + 2) {
+        if (keyTypes.indexOf(typeof data[i]) === -1) {
+          return Promise.reject(new Error('Invalid key value for key ' + ((i/2) + 1)
+              + ' (' + typeof data[i] + ' given)'));
+        }
+      }
+
+      keys = true;
+    } else {
+      if (!this.options.id) {
+        return Promise.reject(new Error('Can\'t give an array of data objects if not key has been specified'));
+      }
+
+      // Check if each object value has or doesn't have an id
+      for (i = 0; i < data.length; i++) {
+        if (typeof data[i][this.options.id] === 'undefined') {
+          return Promise.reject(new Error('Can\'t have objects in array without a key'));
+        }
+      }
+    }
+
+    // Check if given a filter object
+    if (typeof filter === 'object') {
+      return Promise.reject(new Error('can\'t use a filter with an array keyed objects'));
+    }
+
+    return this.save.call(this, {
+      keys: keys,
+      replace: filter === true,
+      data: data
+    });
+  } else if(data instanceof Object) {
+    if (this.options.id && typeof data[this.options.id] !== 'undefined') {
+      return Promise.reject(new Error('Can\'t include key value when updating with object'));
+    }
+
+    if (typeof filter === 'boolean') {
+      // Object of key value pairs to put into database
+      return this.save.call(this, {
+        keys: true,
+        replace: filter ? true : undefined,
+        data: data
+      });
+    } else if (typeof filter === 'object') {
+      // Object of fields to update in object values selected with a filter
+      return this.save.call(this, {
+        data: data,
+        filter: filter
+      });
+    } else {
+      // Object of fields to update in all object values
+      return this.save.call(this, {
+        data: data
+      });
+    }
+  } else {
+    return Promise.reject(new Error('Unknown data type given'));
+  }
 }
-
-//TODO var logicalOperators = ['$and', '$or', '$not', '$nor'];
 
 /**
  * Checks if the given data hits on the given filter

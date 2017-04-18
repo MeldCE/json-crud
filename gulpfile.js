@@ -28,12 +28,11 @@ var paths = {
   docs: 'docs/',
   src: 'src/lib/**/*.js',
   testDir: 'src/spec',
-  srcTestFiles: 'src/testFiles',
   testSrc: 'src/*.spec.js',
-  srcTests: 'src/spec/**/*.spec.js',
+  srcTests: 'src/spec/**/*.js',
   srcTestLib: 'src/spec/lib/*.js',
   srcJasmineJson: 'src/spec/support/jasmine.json',
-  tests: 'spec/**/*.spec.js',
+  tests: 'spec/**/*.js',
   lcov: 'coverage/lcov.info',
   mddoc: 'doc.md'
 };
@@ -130,7 +129,7 @@ gulp.task('complexity', ['lint', 'lint:test'], function() {
       .pipe(complexity());
 });
 
-gulp.task('docs', ['htmldocs', 'mddocs']);
+gulp.task('docs', ['htmldocs', 'mddocs', 'readme']);
 
 gulp.task('htmldocs', ['lint'], function() {
   return gulp.src(paths.src)
@@ -154,12 +153,12 @@ gulp.task('mddocs', ['lint'], function() {
       .pipe(gulp.dest(paths.build));
 });
 
-gulp.task('mddocs', ['lint'], function() {
+/*gulp.task('mddocs', ['lint'], function() {
   return gulp.src(paths.src)
       .pipe(documentation({ format: 'md' }))
       //.pipe(concat(paths.mddoc))
       .pipe(gulp.dest(paths.build));
-});
+});*/
 
 gulp.task('readme', ['mddocs'], function() {
   return gulp.src(['src/README.md', path.join(paths.build, paths.mddoc)])
@@ -175,7 +174,7 @@ gulp.task('readme', ['mddocs'], function() {
       .pipe(gulp.dest('./'));
 });
 
-gulp.task('copy', ['jasmine', 'copy:jasmine.json', 'copy:testFiles'], function() {
+gulp.task('copy', ['jasmine', 'copy:jasmine.json'], function() {
   return gulp.src([paths.src, paths.srcTests, paths.srcTestLib], { base: 'src' })
     .pipe(stripDebug())
     .pipe(gulp.dest(paths.dist));
@@ -183,11 +182,6 @@ gulp.task('copy', ['jasmine', 'copy:jasmine.json', 'copy:testFiles'], function()
 
 gulp.task('copy:jasmine.json', ['jasmine'], function() {
   return gulp.src(paths.srcJasmineJson, { base: 'src' })
-    .pipe(gulp.dest(paths.dist));
-});
-
-gulp.task('copy:testFiles', [], function() {
-  return gulp.src(paths.srcTestFiles, { base: 'src' })
     .pipe(gulp.dest(paths.dist));
 });
 

@@ -1,4 +1,4 @@
-JSON Crud v0.3.0
+JSON Crud v1.0.0
 =========================
 A simple CRUD JSON database using either a JSON file or a folder of JSON files.
 
@@ -23,8 +23,8 @@ resolve to the JSON databaes if everything is ok.
           database
     -   `options.cacheValues` **[Boolean]** Cache the objects in the database
 
-Returns **Promise** A promise that will resolve to a JsonDB if everything
-         checks out
+Returns **Promise&lt;JsonDBInstance&gt;** A promise that will resolve to a JsonDB
+  instance if everything checks out
 
 
 ## Typing
@@ -38,9 +38,11 @@ declare namespace JsonDB {
 
   export type Id = string | number;
 
+  export type IdOrError = Id | Error;
+
   export type Results = { [key: Id]: any };
 
-  export type Data = any[];
+  export type Data = { [key: Id]: any } | any[];
 
   export type FieldFilter =
     /// Matches values that are equal to a specified value.
@@ -73,17 +75,16 @@ declare namespace JsonDB {
 
   export interface JsonDBInstance {
     /**
-     * Create a new value in the database, optionally replace any existing
-     * values with the same Id
+     * Inserts data into the JSON database.
      *
-     * @param [replace] Replace any values with the Ids specified. If falsey,
-     *   the create will reject if there is an id conflict
-     * @param [...data] Data to insert into the database.
+     * @param data Either an object of key-value pairs, an array
+     *   containing key/value pairs ([key, value,...]) or, if the key field has
+     *   been specified, an array of object values each with the key field set
      *
-     * @returns A promise resolving to an array of the Ids of the values
-     *   created
+     * @returns {Promise} A promise that will resolve with an array containing
+     *   keys or errors in creating the data of the inserted data.
      */
-    create: (replace?: boolean; ...data: Data) => Promise<Id[]>;
+    create: (data: Data) => Promise<IdOrError[]>;
     /**
      * Retrieve values from the database
      *
@@ -95,14 +96,35 @@ declare namespace JsonDB {
      */
     read: (filter?: Filter) => Promise<Results>;
     /**
-     * Updates the values in the database
+     * Updates data in the JSON database. Data can either be given as
+     * key-value parameter pairs, OR if the key field has been specified Object
+     * values. New values will be merge into any existing values.
      *
-     * @param [...data] Data to update into the database.
+     * @param data Either:
+     *   - an array of key-value pairs,
+     *   - an array of object value(s) containing the key value (if a key has
+     *     been specified)
+     * @param filter true if the existing items should be replaced
+     *   instead of or false to merge existing values (if values are mergeable)
      *
-     * @returns A promise resolving to an array of the Ids of the values
-     *   updated
+     * @returns {Promise} A promise that will resolve with an array containing
+     *   keys of the updated data.
      */
-    update: (...data: Data) => Promise<Id[]>;
+    update: (data: Data, filter: boolean) => Promise<IdOrError[]>;
+    /**
+     * Updates data in the JSON database. Data can either be given as
+     * key-value parameter pairs, OR if the key field has been specified Object
+     * values. New values will be merge into any existing values.
+     *
+     * @param data Property values to update of any objects that
+     *   match the given filter
+     * @param [filter] A filter to select the items that
+     *   should be updated
+     *
+     * @returns {Promise} A promise that will resolve with an array containing
+     *   keys of the updated data.
+     */
+    update: (data: { [ property: string]: any }, filter: Filter) => Promise<IdOrError[]>;
     /**
      * Deletes values from the database
      *

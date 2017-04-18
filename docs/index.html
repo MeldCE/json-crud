@@ -23,9 +23,14 @@
             type='text' />
           <div id='toc'>
               <a
-                href='#checkExecutionPath'
+                href='#close'
                 class='block bold'>
-                checkExecutionPath
+                close
+              </a>
+              <a
+                href='#close'
+                class='block bold'>
+                close
               </a>
               <a
                 href='#doCreate'
@@ -125,57 +130,49 @@ Implements retrieving a value for the given key(s)/filter
       <div class='fix-margin-3'>
         <div class='px2'>
 <div class='py1'><section class='py2 clearfix'>
-  <h2 id='checkExecutionPath' class='mt0'>
-    checkExecutionPath<span class='gray'>(filter)</span>
+  <h2 id='close' class='mt0'>
+    close<span class='gray'></span>
   </h2>
-  <p>Checks the filter for validity and chooses the best order to do matches
-based on indexes and difficulty of test</p>
+  <p>Cleans up after the CRUD instance. Should be called just before the
+instance is deleted</p>
 
-    <h4>Parameters</h4>
-    <ul class='suppress-p-margin'>
-        <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> <strong>filter</strong>
-          :
-          <div class='force-inline'>
-            <p>Filter to validate and find best execution path</p>
-
-          </div>
-        </li>
-    </ul>
       <h4>Returns</h4>
-      <code><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></code></code>
+      <code><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a></code></code>
       :
       <div class='force-inline'>
-        <p>Containing best steps to do</p>
+        <p>A Promise that resolves when the instance is closed</p>
+
+      </div>
+</section>
+</div><div class='py1'><section class='py2 clearfix'>
+  <h2 id='close' class='mt0'>
+    close<span class='gray'></span>
+  </h2>
+  <p>Cleans up after the CRUD instance. Should be called just before the
+instance is deleted</p>
+
+      <h4>Returns</h4>
+      <code><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a></code></code>
+      :
+      <div class='force-inline'>
+        <p>A Promise that resolves when the instance is closed</p>
 
       </div>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='doCreate' class='mt0'>
-    doCreate<span class='gray'>([replace], data)</span>
+    doCreate<span class='gray'>(data)</span>
   </h2>
-  <p>Inserts data into the JSON database. Data can either be given as
-key-value parameter pairs, OR if the key field has been specified Object
-values. This function will fail if data was a given key already exists
-unless a Boolean is given for the first parameter, in which case, any
-data for an existing key will be replaced.</p>
+  <p>Inserts data into the JSON database.</p>
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>]</code> <strong>replace</strong>
-            (default <code>false</code>)
+        <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></code> or <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> <strong>data</strong>
           :
           <div class='force-inline'>
-            <p>If true, if data already exists for a
-given key, that data will be replaced with the given data</p>
-
-          </div>
-        </li>
-        <li>...Any <strong>data</strong>
-          :
-          <div class='force-inline'>
-            <p>Either key-value pairs, if the key field has been
-specified, Object values containing the key value, or a single Array
-containing one of the previous two options</p>
+            <p>Either an object of key-value pairs, an array
+containing key/value pairs ([key, value,...]) or, if the key field has
+been specified, an array of object values each with the key field set</p>
 
           </div>
         </li>
@@ -185,7 +182,7 @@ containing one of the previous two options</p>
       :
       <div class='force-inline'>
         <p>A promise that will resolve with an array containing
-keys of the inserted data.</p>
+keys or errors in creating the data of the inserted data.</p>
 
       </div>
 </section>
@@ -193,7 +190,7 @@ keys of the inserted data.</p>
   <h2 id='doDelete' class='mt0'>
     doDelete<span class='gray'>(filter)</span>
   </h2>
-  <p>Delete a value/values from the JSON database</p>
+  <p>Retrieves a value from the JSON database</p>
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
@@ -218,7 +215,7 @@ retrieve. If true, all will be deleted</p>
   <h2 id='doDelete' class='mt0'>
     doDelete<span class='gray'>(filter)</span>
   </h2>
-  <p>Retrieves a value from the JSON database</p>
+  <p>Delete a value/values from the JSON database</p>
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
@@ -309,7 +306,7 @@ key(s)/filter(s).</p>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='doUpdate' class='mt0'>
-    doUpdate<span class='gray'>(data)</span>
+    doUpdate<span class='gray'>(data, [filter])</span>
   </h2>
   <p>Updates data in the JSON database. Data can either be given as
 key-value parameter pairs, OR if the key field has been specified Object
@@ -317,12 +314,25 @@ values. New values will be merge into any existing values.</p>
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li>...Any <strong>data</strong>
+        <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> or <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></code><<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code>> or <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></code> <strong>data</strong>
           :
           <div class='force-inline'>
-            <p>Either key-value pairs, if the key field has been
-specified, Object values containing the key value, or a single Array
-containing one of the previous two options</p>
+            <p>Either:</p>
+<ul>
+<li>an array of key-value pairs,</li>
+<li>an object containing the data to update</li>
+<li>object value(s) containing the key value (if a key has been specified)</li>
+</ul>
+
+          </div>
+        </li>
+        <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> or <code>true</code>]</code> <strong>filter</strong>
+          :
+          <div class='force-inline'>
+            <p>If a object containing the data to update, a
+filter to select the items that should be updated, or if object value(s)
+have been given, true if the existing items should be replaced instead of
+merged into</p>
 
           </div>
         </li>
@@ -440,18 +450,33 @@ resolve to the JSON databaes if everything is ok.</p>
         <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code>]</code> <strong>options</strong>
           :
           <div class='force-inline'>
-            <p>Object containing the options for the database.
-(@see (@link options)).</p>
+            <p>Object containing the options for the database.</p>
 
           </div>
+            <ul>
+                <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>]</code> options.path
+                  <p>Path to file/folder to contain JSON database
+if not given as first argument</p>
+</li>
+                <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>]</code> options.id
+                  <p>Field of data objects to be used as the key</p>
+</li>
+                <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>]</code> options.cacheKeys
+                  <p>Cache the keys of the objects in the
+database</p>
+</li>
+                <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>]</code> options.cacheValues
+                  <p>Cache the objects in the database</p>
+</li>
+            </ul>
         </li>
     </ul>
       <h4>Returns</h4>
-      <code><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a></code></code>
+      <code><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a></code><<code>JsonDBInstance</code>></code>
       :
       <div class='force-inline'>
-        <p>A promise that will resolve to a JsonDB if everything
-checks out</p>
+        <p>A promise that will resolve to a JsonDB
+instance if everything checks out</p>
 
       </div>
 </section>
@@ -505,7 +530,7 @@ checks out</p>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='newCrud' class='mt0'>
-    newCrud<span class='gray'>(save, doRead, getKeys, doDelete, [options])</span>
+    newCrud<span class='gray'>(save, doRead, getKeys, doDelete, close, [options])</span>
   </h2>
   <p>Generates a new CRUD instance.</p>
 
@@ -537,6 +562,13 @@ keys currently in the database</p>
           :
           <div class='force-inline'>
             <p>Function used to delete data</p>
+
+          </div>
+        </li>
+        <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a></code> <strong>close</strong>
+          :
+          <div class='force-inline'>
+            <p>Function to close and clean up the CRUD instance</p>
 
           </div>
         </li>
@@ -598,7 +630,7 @@ callbacks are complete.</p>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='runFilter' class='mt0'>
-    runFilter<span class='gray'>(data, filter, [or])</span>
+    runFilter<span class='gray'>(data, filter)</span>
   </h2>
   <p>Checks if the given data hits on the given filter</p>
 
@@ -618,14 +650,6 @@ callbacks are complete.</p>
 
           </div>
         </li>
-        <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>]</code> <strong>or</strong>
-          :
-          <div class='force-inline'>
-            <p>Whether all tests should match (falsey) or just one
-(truey).</p>
-
-          </div>
-        </li>
     </ul>
       <h4>Returns</h4>
       <code><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code></code>
@@ -637,28 +661,28 @@ callbacks are complete.</p>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='save' class='mt0'>
-    save<span class='gray'>(data)</span>
+    save<span class='gray'>(saveArgs)</span>
   </h2>
   <p>Saves the data back to the file</p>
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> <strong>data</strong>
+        <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> <strong>saveArgs</strong>
           :
           <div class='force-inline'>
             <p>Data for saving</p>
 
           </div>
             <ul>
-                <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>]</code> data.replace
+                <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>]</code> saveArgs.replace
                   <p>Whether data should be replaced. If true,
 data should be replaced, if false an error should thrown / the promise
 rejected. If undefined, data should be merged/replaced</p>
 </li>
-                <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code> data.keys
+                <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code> saveArgs.keys
                   <p>Whether or not data is in key/value pairs</p>
 </li>
-                <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></code> data.data
+                <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></code> or <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> saveArgs.data
                   <p>Data to be saved</p>
 </li>
             </ul>
@@ -668,35 +692,35 @@ rejected. If undefined, data should be merged/replaced</p>
       <code><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a></code></code>
       :
       <div class='force-inline'>
-        <p>A promise that will resolve to an array of the keys of
-the data saved</p>
+        <p>A promise that will resolve to an array of the keys or
+errors of the data saved</p>
 
       </div>
 </section>
 </div><div class='py1'><section class='py2 clearfix'>
   <h2 id='save' class='mt0'>
-    save<span class='gray'>(data)</span>
+    save<span class='gray'>(saveArgs)</span>
   </h2>
   <p>Saves the data back to the file</p>
 
     <h4>Parameters</h4>
     <ul class='suppress-p-margin'>
-        <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> <strong>data</strong>
+        <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> <strong>saveArgs</strong>
           :
           <div class='force-inline'>
             <p>Data for saving</p>
 
           </div>
             <ul>
-                <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>]</code> data.replace
+                <li><code>[<code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>]</code> saveArgs.replace
                   <p>Whether data should be replaced. If true,
 data should be replaced, if false an error should thrown / the promise
 rejected. If undefined, data should be merged/replaced</p>
 </li>
-                <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code> data.keys
+                <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code> saveArgs.keys
                   <p>Whether or not data is in key/value pairs</p>
 </li>
-                <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></code> data.data
+                <li><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></code> or <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a></code> saveArgs.data
                   <p>Data to be saved</p>
 </li>
             </ul>
@@ -706,8 +730,8 @@ rejected. If undefined, data should be merged/replaced</p>
       <code><code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a></code></code>
       :
       <div class='force-inline'>
-        <p>A promise that will resolve to an array of the keys of
-the data saved</p>
+        <p>A promise that will resolve to an array of the keys or
+errors of the data saved</p>
 
       </div>
 </section>
