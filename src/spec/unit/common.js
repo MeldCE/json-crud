@@ -440,6 +440,52 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
         }, fail).finally(done);
       });
 
+      it('should merge object values if given with false',
+          function(done) {
+        var newValue = {
+          _id: 'testcomplex',
+          another: 'cool',
+          newValue: 'new'
+        };
+
+        return db.update([newValue], false).then(function(ids) {
+          expect(ids).toEqual(['testcomplex']);
+
+          return db.read().then(function(results) {
+            Object.keys(results).forEach(function(key) {
+              if (key === 'testcomplex') {
+                expect(results[key]).toEqual(merge({}, testData['testcomplex'], newValue));
+              } else {
+                expect(results[key]).toEqual(testData[key]);
+              }
+            });
+          });
+        }).catch(fail).finally(done);
+      });
+
+      it('should replace object values in array if given with true',
+          function(done) {
+        var newValue = {
+          _id: 'testcomplex',
+          another: 'cool',
+          newValue: 'new'
+        };
+
+        return db.update([newValue], true).then(function(ids) {
+          expect(ids).toEqual(['testcomplex']);
+
+          return db.read().then(function(results) {
+            Object.keys(results).forEach(function(key) {
+              if (key === 'testcomplex') {
+                expect(results[key]).toEqual(newValue);
+              } else {
+                expect(results[key]).toEqual(testData[key]);
+              }
+            });
+          });
+        }).catch(fail).finally(done);
+      });
+
       it('should update values with given an array of key/value pairs',
           function(done) {
         var newValues = {
