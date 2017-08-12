@@ -20,6 +20,9 @@ function doCreate(data) {
   var i, keys = false;
 
   if (data instanceof Array) {
+    if (typeof data[0] === 'undefined') {
+      return Promise.reject(new Error('Can\'t have undefined keys'));
+    }
     // Check if a key is the first element
     if (keyTypes.indexOf(typeof data[0]) !== -1) {
       // Check for an even amount of elements
@@ -89,6 +92,9 @@ function doUpdate(data, filter) {
   var i, keys = false;
 
   if (data instanceof Array) {
+    if (typeof data[0] === 'undefined') {
+      return Promise.reject(new Error('Can\'t have undefined keys'));
+    }
     // Check if a key is the first element
     if (keyTypes.indexOf(typeof data[0]) !== -1) {
       // Check for an even amount of elements
