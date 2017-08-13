@@ -65,21 +65,18 @@ module.exports = function JsonFolderDB(file, options) {
    * Retreives the value for a given id from the associated file
    *
    * @param {String} [id] Id of parameter to get filename for
+   * @param {boolean} [force] Whether or not to force a reread of the data
+   *   from the file
    *
    * @returns {Promise} A promise that will resolve to the data
    */
-  function readData(id) {
-    var filename = getFilename(id);
-
+  function readData(id, force) {
     if (typeof id === 'undefined') {
-      var keysPromise;
-      if (options.cacheKeys) {
-        keysPromise = Promise.resolve(cachedKeys);
-      } else {
-        keysPromise = readKeys();
+      if (!force && options.cacheValues) {
+        return Promise.resolve(cachedData);
       }
-      return keysPromise.then(function(keys) {
-        return Promise.reject(new Error('TODO Read all data'));
+
+      return readKeys(force).then(function(keys) {
         var promises = [];
         var data = {};
 
@@ -94,6 +91,18 @@ module.exports = function JsonFolderDB(file, options) {
         });
       });
     } else {
+      // Return the cached value if we are caching values
+      if (!force && options.cacheValues) {
+        return Promise.resolve(cachedData[id]);
+      }
+
+      // Check if we have a key for the data if we have cached the keys
+      if (!force && options.cacheKeys && cachedKeys.indexOf(id) === -1) {
+        return Promise.resolve(undefined);
+      }
+
+      var filename = getFilename(id);
+
       // Check if file exists
       return access(filename, fs.R_OK | fs.W_OK).then(function() {
         return readFile(filename).then(function(buffer) {
@@ -116,9 +125,19 @@ module.exports = function JsonFolderDB(file, options) {
   /**@private
    * Reads the keys from the file
    *
+   * @param {boolean} [force] Whether or not to force a reread of the data
+   *   from the file
+   *
    * @returns {Promise} A promise that resolves to an array of the keys
    */
-  function readKeys() {
+  function readKeys(force) {
+    if (!force && options.cacheKeys) {
+      return Promise.resolve(cachedKeys);
+    }
+    if (!force && options.cacheValues) {
+      return Promise.resolve(Object.keys(cachedData));
+    }
+
     return readdir(file).then(function(files) {
       var keys = [];
 
@@ -146,8 +165,27 @@ module.exports = function JsonFolderDB(file, options) {
     console.log('saveData', arguments);
     var filename = getFilename(id);
     if (typeof data === 'undefined') {
-      // Delete file if exists
-      return unlink(filename);
+      // Check if the file exists
+      if (options.cacheValues) {
+       if (typeof cachedData[id] !== 'undefined') {
+         return unlink(filename);
+       }
+      } else if (options.cacheKeys) {
+         if (cachedKeys.indexOf(id) !== -1) {
+           return unlink(filename);
+         }
+      } else {
+        // Check if file exists
+        return access(filename, fs.R_OK | fs.W_OK).then(function() {
+          return unlink(filename);
+        }, function(err) {
+          if (err.code === 'ENOENT') {
+            return Promise.resolve(undefined);
+          } else {
+            return Promise.reject(err);
+          }
+        });
+      }
     } else {
       return writeFile(filename, JSON.stringify(data, null, 2));
     }
@@ -171,12 +209,10 @@ module.exports = function JsonFolderDB(file, options) {
     var data = saveArgs.data;
 
     // TODO Could possibly cause a race condition if multiple saves happen
-    // at the same time, ie if multiple saves are called at once
+    // at the same time
     var keysPromise;
     if (saveArgs.replace === true) {
       keysPromise = Promise.resolve(false);
-    } else if (options.cacheKeys) {
-      keysPromise = Promise.resolve(cachedKeys);
     } else {
       keysPromise = readKeys();
     }
@@ -189,6 +225,26 @@ module.exports = function JsonFolderDB(file, options) {
       const doSave = function(key, value) {
         return saveData(key, value).then(function() {
           savedKeys.push(key);
+          if (typeof value === 'undefined') {
+            if (options.cacheValues) {
+              delete cachedData[key];
+            }
+            // TODO not going to handle value of undefined
+            if (options.cacheKeys && cachedKeys.indexOf(key) !== -1) {
+              cachedKeys.splice(cachedKeys.indexOf(key), 1);
+            }
+          } else {
+            if (options.cacheValues) {
+              if (value instanceof Object) {
+                cachedData[key] = merge(true, value);
+              } else {
+                cachedData[key] = value;
+              }
+            }
+            if (options.cacheKeys && cachedKeys.indexOf(key) === -1) {
+              cachedKeys.push(key);
+            }
+          }
         }, function(error) {
           error.id = key;
           error.value = value;
@@ -502,50 +558,35 @@ module.exports = function JsonFolderDB(file, options) {
         filter = [filter];
       } else if (filter instanceof Array) {
       } else if (filter === true || typeof filter === 'object') {
-        if (options.cacheValues) {
+        console.log('object/true delete handler');
+        // Get the existing keys
+        return readKeys().then(function(existingKeys) {
+          console.log('existing keys are', existingKeys);
           if (filter === true) {
-            deletedKeys = Object.keys(cachedData);
-            Object.keys(cachedData).forEach(function(key) {
+            deletedKeys = existingKeys;
+            existingKeys.forEach(function(key) {
               deletes.push(saveData(key));
             });
           } else {
-            common.processFilter(cachedData, filter, function(key) {
-              deletes.push(saveData(key).then(function() {
-                delete cachedData[key];
-                deletedKeys.push(key);
-              }));
-            });
-          }
-
-          return Promise.all(function() {
-            if (filter === true) {
-              cachedData = {};
-            }
-
-            if (options.cacheKeys) {
-              cachedKeys = Object.keys(cachedData);
-            }
-
-            resolve(deletedKeys);
-          });
-        } else {
-          if (options.cacheKeys) {
-            keysPromise = Promise.resolve(cachedKeys);
-          } else {
-            keysPromise = readKeys();
-          }
-
-          keysPromise.then(function(existingKeys) {
-            if (filter === true) {
-              deletedKeys = existingKeys;
-              existingKeys.forEach(function(key) {
-                deletes.push(saveData(key));
+            if (options.cacheValues) {
+              console.log('processing filter', filter);
+              common.processFilter(cachedData, filter, function(key) {
+                console.log('deleting matching item', key);
+                deletes.push(saveData(key).then(function() {
+                  delete cachedData[key];
+                  deletedKeys.push(key);
+                }));
               });
             } else {
+              console.log('processing filter on non-cached data');
               existingKeys.forEach(function(key) {
                 deletes.push(readData(key).then(function(data) {
+                  console.log('loaded data for', key);
                   if (common.runFilter(data, filter)) {
                     return saveData(key).then(function() {
+                      if (options.cacheKeys) {
+                        cachedKeys.splice(cachedKeys.indexOf(key), 1);
+                      }
                       deletedKeys.push(key);
                     });
                   } else {
@@ -554,13 +595,20 @@ module.exports = function JsonFolderDB(file, options) {
                 }));
               });
             }
+          }
 
-            Promise.all(deletes).then(function() {
-              resolve(deletedKeys);
-            });
-          });
-        }
-          return;
+          return Promise.all(deletes).then(function() {
+            if (filter === true && options.cacheValues) {
+              cachedData = {};
+            }
+            if (options.cacheValues && options.cacheKeys) {
+              cachedKeys = Object.keys(cachedData);
+            } else if (filter === true && options.cacheKeys) {
+              cachedKeys = [];
+            }
+            resolve(deletedKeys);
+          }, reject);
+        });
       } else {
         reject({
           message: 'filter needs to be an object containing a filter'
@@ -576,19 +624,28 @@ module.exports = function JsonFolderDB(file, options) {
       }
 
       keysPromise.then(function(keys) {
+        console.log('got current keys', keys);
         filter.forEach(function(id) {
           if (keys.indexOf(id) !== -1) {
             // TODO XXX Remove once file watch implemented
-            if (options.cacheValues) {
-              delete cachedData[id];
-            }
+            deletes.push(saveData(id).then(function() {
+              if (options.cacheValues) {
+                delete cachedData[id];
+              } else if (options.cacheKeys) {
+                // Delete remove key from cached keys if caching keys but not values
+                cachedKeys.splice(cachedKeys.indexOf(id), 1);
+              }
 
-            deletedKeys.push(id);
-            deletes.push(saveData(id));
+              deletedKeys.push(id);
+            }));
           }
         });
 
         Promise.all(deletes).then(function() {
+          // Redo cached keys if caching keys and values (otherwise done above)
+          if (options.cacheKeys && options.cacheValues) {
+            cachedKeys = Object.keys(cachedData);
+          }
           resolve(deletedKeys);
         });
       });
@@ -613,6 +670,31 @@ module.exports = function JsonFolderDB(file, options) {
     }
   }
 
-  return common.newCrud(save, doRead,
-      readKeys, doDelete, close, options);
+  var initialisePromises = [];
+  var valuePromise;
+
+  if (options.cacheValues) {
+    valuePromise = readData(undefined, true).then(function(data) {
+      cachedData = data;
+    });
+    initialisePromises.push(valuePromise);
+  }
+  if (options.cacheKeys) {
+    var keyPromise;
+    if (options.cacheValues) {
+      keyPromise = valuePromise.then(function() {
+        return readKeys(true);
+      });
+    } else {
+      keyPromise = readKeys(true);
+    }
+    initialisePromises.push(keyPromise.then(function(keys) {
+      cachedKeys = keys;
+    }));
+  }
+
+  return Promise.all(initialisePromises).then(function() {
+    return common.newCrud(save, doRead,
+        readKeys, doDelete, close, options);
+  });
 };

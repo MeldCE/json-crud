@@ -1,7 +1,14 @@
 {
   "type": {
     "path": {
-      "type": "string"
+      "types": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
     },
     "id": {
       "type": "string"

@@ -186,7 +186,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
             + 'create that failed within the resolved array', function() {
           var key = 'testcomplex';
           beforeEach(function(done) {
-            console.log('adding to dbl', key);
+            void 0;
             return db.create([key, testData[key]]).catch(fail).finally(done);
           });
 
@@ -205,7 +205,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
 
           it('for array of keyed objects', function(done) {
             return db.create(keyedTestData).then(function(secondKeys) {
-              console.log('XXXXX', secondKeys);
+              void 0;
               expect(secondKeys.length).toEqual(keyedTestData.length);
               secondKeys.forEach(function(secondKey) {
                 expect(secondKey).not.toEqual(key);
@@ -222,7 +222,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
           it('for key/value object', function(done) {
             return db.create(testData).then(function(secondKeys) {
               expect(secondKeys.length).toEqual(Object.keys(testData).length);
-              console.log('XXXXX', secondKeys);
+              void 0;
               secondKeys.forEach(function(secondKey) {
                 expect(secondKey).not.toEqual(key);
                 if (secondKey instanceof Error) {
@@ -237,7 +237,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
 
       describe('read()', function() {
         beforeEach(function(done) {
-          console.log('SPEC adding testdata', testData);
+          void 0;
           return db.create(testData).catch(fail).finally(done);
         });
 
@@ -245,7 +245,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
           it('should treat multiple specified values as logical AND',
               function(done) {
             db.read({ someVar: 'some', another: 'another' }).then(function(values) {
-              console.log('read got values', values);
+              void 0;
 
               expect(values).toEqual(jasmine.any(Object));
               expect(Object.keys(values).length).toEqual(2, 'two matching items');
@@ -377,7 +377,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
           describe('$gt', () => {
             it('should test for mathmatical greatness', (done) => {
               db.read({ numeric: { $gt: 3 } }).then(function(values) {
-                console.log('from got', values);
+                void 0;
                 expect(Object.keys(values).length).toBeTruthy();
                 Object.keys(values).forEach(function(v) {
                   expect(values[v]).toEqual(jasmine.any(Object));
@@ -571,7 +571,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
           };
 
           return db.update(newValues, false).then(function(ids) {
-            console.log('got ids', ids);
+            void 0;
             return db.read(ids);
           }).then(function(results) {
             expect(results['test']).toEqual(newValues['test']);
@@ -592,7 +592,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
 
               return acc;
             }, []);
-            console.log('ids from update all', ids);
+            void 0;
             expect(ids.length).toEqual(objectKeys.length);
 
             return db.read(ids).then(function(results) {

@@ -20,6 +20,10 @@ var writeFile = Promise.denodeify(fs.writeFile);
 module.exports = function JsonFileDB(file, options) {
   var cachedData, cachedKeys;
 
+  if (file === false) {
+    options.cacheValues = true;
+    cachedData = {};
+  }
 
   /**@private
    * Reads the data from the file
@@ -30,7 +34,7 @@ module.exports = function JsonFileDB(file, options) {
    * @returns {Promise} A promise that resolves to the data
    */
   function readData(force) {
-    if (!force && options.cacheValues) {
+    if (file === false || !force && options.cacheValues) {
       return  Promise.resolve(cachedData);
     }
 
@@ -78,7 +82,11 @@ module.exports = function JsonFileDB(file, options) {
     if (options.cacheKeys) {
       cachedKeys = Object.keys(data);
     }
-    return writeFile(file, JSON.stringify(data, null, 2));
+    if (file === false) {
+      return Promise.resolve();
+    } else {
+      return writeFile(file, JSON.stringify(data, null, 2));
+    }
   }
 
   /**
@@ -384,7 +392,8 @@ module.exports = function JsonFileDB(file, options) {
           keysPromise = readKeys();
         }
 
-        keysPromise.then(function(existingKeys) {
+        return keysPromise.then(function(existingKeys) {
+          console.log('delete got existing keys', existingKeys);
           if (options.cacheValues) {
             cachedData = {};
           }
@@ -477,7 +486,7 @@ module.exports = function JsonFileDB(file, options) {
    * @returns {Promise} A Promise that resolves when the instance is closed
    */
   function close() {
-    if (options.listen) {
+    if (file !== false && options.listen) {
       fs.unwatch(file, listener);
     }
 
@@ -504,19 +513,36 @@ module.exports = function JsonFileDB(file, options) {
   // Load existing data
   options = options || {};
 
+  var initialisePromises = [];
+  var valuePromise;
 
   if (options.cacheValues) {
-    cachedData = readData(true);
+    valuePromise = readData(true).then(function(data) {
+      cachedData = data;
+    });
+    initialisePromises.push(valuePromise);
   }
   if (options.cacheKeys) {
-    cachedKeys = readKeys(true);
+    var keyPromise;
+    if (options.cacheValues) {
+      keyPromise = valuePromise.then(function() {
+        return readKeys(true);
+      });
+    } else {
+      keyPromise = readKeys(true);
+    }
+    initialisePromises.push(keyPromise.then(function(keys) {
+      cachedKeys = keys;
+    }));
   }
 
   // TODO Attach listener on to file
-  if (options.listen) {
+  if (file !== false && options.listen) {
     fs.watch(file, { persistent: true }, listener);
   }
 
-  return common.newCrud(save, doRead,
-      readKeys, doDelete, close, options);
+  return Promise.all(initialisePromises).then(function() {
+    return common.newCrud(save, doRead,
+        readKeys, doDelete, close, options);
+  });
 };
