@@ -233,6 +233,16 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
             }).catch(fail).finally(done);
           });
         });
+
+        it('should not store/cache the given data Object', function(done) {
+          var testDataCopy = merge(true, testData);
+          return db.create(testData).then(function() {
+            testDataCopy.complex1.someVar = 'bad';
+            return db.read('complex1');
+          }).then(function(results) {
+            expect(results.complex1.someVar).not.toEqual('bad');
+          }).catch(fail).finally(done);
+        });
       });
 
       describe('read()', function() {
