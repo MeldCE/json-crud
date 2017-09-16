@@ -363,7 +363,7 @@ module.exports = function JsonFolderDB(file, options) {
             return;
           }
         }
-      } else if (typeof filter === 'undefined') {
+      } else if (typeof filter === 'undefined' || filter === null) {
         // Return all values
         if (options.cacheData) {
           resolve(cachedData);
