@@ -275,7 +275,7 @@ module.exports = function JsonFileDB(file, options) {
           }
         }
         ids = filter;
-      } else if (typeof filter === 'undefined') {
+      } else if (typeof filter === 'undefined' || filter === null) {
         // Return all values
         if (options.cacheValues) {
           resolve(cachedData);

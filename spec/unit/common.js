@@ -251,6 +251,32 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
           return db.create(testData).catch(fail).finally(done);
         });
 
+        describe('no filter', function() {
+          it('should return all values if undefined is given', function(done) {
+            db.read().then(function(values) {
+              expect(values).toEqual(jasmine.any(Object));
+              expect(Object.keys(values).length).toEqual(Object.keys(testData).length,
+                  'the total number of test data items');
+            }).catch(fail).finally(done);
+          });
+
+          it('should return all values if null is given', function(done) {
+            db.read(null).then(function(values) {
+              expect(values).toEqual(jasmine.any(Object));
+              expect(Object.keys(values).length).toEqual(Object.keys(testData).length,
+                  'the total number of test data items');
+            }).catch(fail).finally(done);
+          });
+
+          it('should return all values if an empty object is given', function(done) {
+            db.read({}).then(function(values) {
+              expect(values).toEqual(jasmine.any(Object));
+              expect(Object.keys(values).length).toEqual(Object.keys(testData).length,
+                  'the total number of test data items');
+            }).catch(fail).finally(done);
+          });
+        });
+
         describe('complex filters', function() {
           it('should treat multiple specified values as logical AND',
               function(done) {
