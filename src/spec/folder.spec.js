@@ -285,7 +285,9 @@ describe('Folder JSON DB', function() {
           expect(Object.keys(values).length).toBeTruthy();
           Object.keys(values).forEach(function(v) {
             expect(values[v]).toEqual(jasmine.any(Object));
-            expect(values[v].array.indexOf('val1')).toEqual(-1);
+            if (values[v].array instanceof Array) {
+              expect(values[v].array.indexOf('val1')).toEqual(-1);
+            }
           });
         }, fail).finally(done);
       });
