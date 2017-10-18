@@ -3,6 +3,41 @@ var fs = require('fs');
 var merge = require('merge');
 
 /**
+ * Checks if two arrays have the same values in them, not worrying about order
+ *
+ * @param array1 First array to check
+ * @param array2 Second array to check
+ *
+ * @returns {boolean} True is the arrays contain the same values
+ */
+const arrayHasSameValues = function (array1, array2) {
+  if (array1.length !== array2.length) {
+    return false;
+  }
+
+  // Clone the second array
+  array2 = array2.concat();
+
+  let i;
+
+  for (i = 0; i < array1.length; i++) {
+    let index = array2.indexOf(array1[i]);
+
+    if (index === -1) {
+      return false;
+    }
+
+    array2.splice(index, 1);
+  }
+
+  if (array2.length === 0) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
  * Defines the read tests
  *
  * @this Test environment
@@ -571,7 +606,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
 
           return db.update(newValuesArray).then(function(ids) {
             expect(ids).toEqual(jasmine.any(Array));
-            expect(ids.length).toEqual(Object.keys(newValues).length);
+            expect(arrayHasSameValues(ids, Object.keys(newValues))).toBeTruthy('contain the same ids');
           }).catch(fail).finally(done);
         });
 
@@ -653,7 +688,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
 
               return acc;
             }, []);
-            expect(ids.length).toEqual(objectKeys.length);
+            expect(arrayHasSameValues(ids, objectKeys)).toBeTruthy('contain the same ids');
 
             return db.read(ids).then(function(results) {
               Object.keys(results).forEach(function(id) {
@@ -681,7 +716,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
 
           return db.delete(keys).then(function(ids) {
             expect(ids).toEqual(jasmine.any(Array));
-            expect(ids).toEqual(keys);
+            expect(arrayHasSameValues(ids, keys)).toBeTruthy('array values match');
           }).catch(fail).finally(done);
         });
 
@@ -692,11 +727,7 @@ module.exports.instanceTests = function (dbPath, badDbPath) {
           return db.delete(keys).then(function(ids) {
             expect(ids.length).toEqual(keys.length);
 
-            keys.forEach(function(key) {
-              ids.splice(ids.indexOf(key), 1);
-            });
-
-            expect(ids.length).toEqual(0, 'ids and keys contain the same elements');
+            expect(arrayHasSameValues(ids, keys)).toBeTruthy('array values match');
 
             return db.read();
           }).then(function(results) {
