@@ -20,13 +20,24 @@ var writeFile = Promise.denodeify(fs.writeFile);
 module.exports = function JsonFileDB(file, options) {
   var cachedData, cachedKeys;
 
+  if (file === false) {
+    options.cacheValues = true;
+    cachedData = {};
+  }
 
   /**@private
    * Reads the data from the file
    *
+   * @param {boolean} [force] Whether or not to force a reread of the data
+   *   from the file
+   *
    * @returns {Promise} A promise that resolves to the data
    */
-  function readData() {
+  function readData(force) {
+    if (file === false || !force && options.cacheValues) {
+      return  Promise.resolve(cachedData);
+    }
+
     return readFile(file).then(function(fileData) {
       try {
         //TODO Handle empty file/non-object file?
@@ -40,9 +51,16 @@ module.exports = function JsonFileDB(file, options) {
   /**@private
    * Reads the keys from the file
    *
+   * @param {boolean} [force] Whether or not to force a reread of the data
+   *   from the file
+   *
    * @returns {Promise} A promise that resolves to an array of the keys
    */
-  function readKeys() {
+  function readKeys(force) {
+    if (!force && options.cacheKeys) {
+      return Promise.resolve(cachedKeys);
+    }
+
     return readData().then(function(data) {
       try {
         return Promise.resolve(Object.keys(data));
@@ -64,58 +82,149 @@ module.exports = function JsonFileDB(file, options) {
     if (options.cacheKeys) {
       cachedKeys = Object.keys(data);
     }
-    return writeFile(file, JSON.stringify(data, null, 2));
+    if (file === false) {
+      return Promise.resolve();
+    } else {
+      return writeFile(file, JSON.stringify(data, null, 2));
+    }
   }
 
   /**
    * Saves the data back to the file
    *
-   * @param {Object} data Data for saving
-   * @param {Boolean} [data.replace] Whether data should be replaced. If true,
+   * @param {Object} saveArgs Data for saving
+   * @param {Boolean} [saveArgs.replace] Whether data should be replaced. If true,
    *   data should be replaced, if false an error should thrown / the promise
    *   rejected. If undefined, data should be merged/replaced
-   * @param {Boolean} data.keys Whether or not data is in key/value pairs
-   * @param {Array} data.args Data to be saved
+   * @param {Boolean} saveArgs.keys Whether or not data is in key/value pairs
+   * @param {Array|Object} saveArgs.data Data to be saved
    *
-   * @returns {Promise} A promise that will resolve to an array of the keys of
-   *   the data saved
+   * @returns {Promise} A promise that will resolve to an array of the keys or
+   *   errors of the data saved
    */
-  function save(data) {
-    console.log('save', data);
-    var cData, args = data.args, i;
+  function save(saveArgs) {
+    console.log('file save called', saveArgs);
+    var cData, data = saveArgs.data, i, savedKeys = [];
 
-    if (options.cacheData) {
+    if (options.cacheValues) {
       cData = Promise.resolve(cachedData);
     } else {
       cData = readData();
     }
 
     return cData.then(function(currentData) {
-      if (data.keys) {
-        for (i = 0; i < args.length; i = i + 2) {
-          if (data.replace === true || currentData[args[i]] === undefined) {
-            currentData[args[i]] = args[i+1];
-          } else {
-            currentData[args[i]] = merge(currentData[args[i]], args[i+1]);
+      var error;
+      console.log('current data is', currentData);
+      if (saveArgs.data instanceof Array) {
+        if (saveArgs.keys) {
+          for (i = 0; i < data.length; i = i + 2) {
+            if (saveArgs.replace === true
+                || typeof currentData[data[i]] === 'undefined') {
+              currentData[data[i]] = data[i+1];
+            } else {
+              if (saveArgs.replace === false) {
+                error = new Error('Value for `' + data[i] + '` already exists');
+                error.id = data[i];
+                error.data = data[i+1];
+                savedKeys.push(error);
+                continue;
+              }
+              if (['object', 'array'].indexOf(typeof newData) !== -1
+                  && typeof currentData[data[i]] === typeof data[i+1]) {
+                currentData[data[i]] = merge(currentData[data[i]], data[i+1]);
+              } else {
+                currentData[data[i]] = data[i+1];
+              }
+            }
+            savedKeys.push(data[i]);
           }
+        } else {
+          for(i = 0; i < data.length; i++) {
+            var id = data[i][options.id];
+            if (saveArgs.replace === true
+                || currentData[id] === undefined) {
+              currentData[id] = data[i];
+            } else {
+              if (saveArgs.replace === false) {
+                console.log('rejecting');
+                error = new Error('Value for `' + id + '` already exists');
+                error.id = id;
+                error.data = data[i];
+                savedKeys.push(error);
+                continue;
+              }
+              // Values must be an object so only need to check if the current
+              // value is an object (but not an array)
+              if (!(currentData[id] instanceof Array)
+                  && typeof currentData[id] == 'object') {
+                currentData[id]
+                    = merge(currentData[id], data[i]);
+              } else {
+                currentData[id] = data[i];
+              }
+            }
+            // TODO Remove _id value
+            savedKeys.push(id);
+          }
+        }
+      } else if (saveArgs.data instanceof Object) {
+        if (saveArgs.keys) {
+          // Object of key/value pairs to update
+          savedKeys = Object.keys(saveArgs.data).map(function(key) {
+            if (saveArgs.replace === false && typeof currentData[key] !== 'undefined') {
+              error = new Error('Value for `' + key + '` already exists');
+              error.id = key;
+              error.data = saveArgs.data[key];
+              return error;
+            }
+            if (saveArgs.replace === true || typeof saveArgs.data[key] !== 'object'
+                || typeof currentData !== 'object') {
+              currentData[key] = saveArgs.data[key];
+            } else if (currentData[key] instanceof Array
+                && saveArgs.data[key] instanceof Array) {
+                  currentData[key] = currentData[key].concat(saveArgs.data[key]);
+            } else if (currentData[key] instanceof Array
+                || saveArgs.data[key] instanceof Array) {
+                  currentData[key] = saveArgs.data[key];
+            } else {
+              currentData[key] = merge(currentData[key], saveArgs.data[key]);
+            }
+            return key;
+          });
+        } else if (saveArgs.filter) {
+          // Update all current object values that match filter with given data
+          Object.keys(currentData).forEach(function(key) {
+            if (!(currentData[key] instanceof Array)
+                && typeof currentData[key] === 'object') {
+              if (common.runFilter(currentData[key], saveArgs.filter)) {
+                savedKeys.push(key);
+                // run update
+                currentData[key] = merge(currentData[key], saveArgs.data);
+              }
+            }
+          });
+        } else {
+          // Update all current object values with given data
+          Object.keys(currentData).forEach(function(key) {
+            if (!(currentData[key] instanceof Array)
+                && typeof currentData[key] === 'object') {
+              savedKeys.push(key);
+              // run update
+              currentData[key] = merge(currentData[key], saveArgs.data);
+            }
+          });
         }
       } else {
-        for(i = 0; i < args.length; i++) {
-          if (data.replace === true
-              || currentData[args[i][options.id]] === undefined) {
-            currentData[args[i][options.id]] = args[i];
-          } else {
-            currentData[args[i][options.id]]
-                = merge(currentData[args[i]], args[i]);
-          }
-        }
+        return Promise.reject(new Error('Unknown data given to save'));
       }
 
-      if (options.cacheData) {
+      if (options.cacheValues) {
         cachedData = currentData;
       }
 
-      return saveData(currentData);
+      return saveData(currentData).then(function() {
+        return Promise.resolve(savedKeys);
+      });
     });
   }
 
@@ -166,9 +275,9 @@ module.exports = function JsonFileDB(file, options) {
           }
         }
         ids = filter;
-      } else if (typeof filter === 'undefined') {
+      } else if (typeof filter === 'undefined' || filter === null) {
         // Return all values
-        if (options.cacheData) {
+        if (options.cacheValues) {
           resolve(cachedData);
         } else {
           readData().then(function(data) {
@@ -283,9 +392,13 @@ module.exports = function JsonFileDB(file, options) {
           keysPromise = readKeys();
         }
 
-        keysPromise.then(function(existingKeys) {
+        return keysPromise.then(function(existingKeys) {
+          console.log('delete got existing keys', existingKeys);
           if (options.cacheValues) {
             cachedData = {};
+          }
+          if (options.cacheKeys) {
+            cachedKeys = [];
           }
 
           saveData({}).then(function() {
@@ -370,12 +483,14 @@ module.exports = function JsonFileDB(file, options) {
    * Cleans up after the CRUD instance. Should be called just before the
    * instance is deleted
    *
-   * @returns {undefined}
+   * @returns {Promise} A Promise that resolves when the instance is closed
    */
   function close() {
-    if (options.listen) {
+    if (file !== false && options.listen) {
       fs.unwatch(file, listener);
     }
+
+    return Promise.resolve();
   }
 
   /** @private
@@ -389,7 +504,8 @@ module.exports = function JsonFileDB(file, options) {
     if (event == 'rename') {
     } else {
       // Reload file
-      cachedData = readData();
+      cachedData = readData(true);
+      cachedKeys = readKeys(true);
     }
   }
 
@@ -397,18 +513,36 @@ module.exports = function JsonFileDB(file, options) {
   // Load existing data
   options = options || {};
 
+  var initialisePromises = [];
+  var valuePromise;
 
   if (options.cacheValues) {
-    cachedData = readData();
-  } else if (options.cacheKeys) {
-    cachedKeys = readKeys();
+    valuePromise = readData(true).then(function(data) {
+      cachedData = data;
+    });
+    initialisePromises.push(valuePromise);
+  }
+  if (options.cacheKeys) {
+    var keyPromise;
+    if (options.cacheValues) {
+      keyPromise = valuePromise.then(function() {
+        return readKeys(true);
+      });
+    } else {
+      keyPromise = readKeys(true);
+    }
+    initialisePromises.push(keyPromise.then(function(keys) {
+      cachedKeys = keys;
+    }));
   }
 
   // TODO Attach listener on to file
-  if (options.listen) {
+  if (file !== false && options.listen) {
     fs.watch(file, { persistent: true }, listener);
   }
 
-  return common.newCrud(save, doRead,
-      readKeys, doDelete, close, options);
+  return Promise.all(initialisePromises).then(function() {
+    return common.newCrud(save, doRead,
+        readKeys, doDelete, close, options);
+  });
 };

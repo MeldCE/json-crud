@@ -111,5 +111,5 @@ module.exports = {
   }
 };
 
-module.exports.delete.doc.arguments = module.exports.read.doc.arguments;
+module.exports.type.delete.doc.parameters = module.exports.type.read.doc.parameters;
 
