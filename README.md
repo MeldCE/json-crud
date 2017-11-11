@@ -1,4 +1,4 @@
-JSON Crud v1.0.0
+JSON Crud v1.0.1
 =========================
 A simple CRUD JSON database using either a JSON file or a folder of JSON files.
 
@@ -110,7 +110,7 @@ declare namespace JsonDB {
      * @returns {Promise} A promise that will resolve with an array containing
      *   keys of the updated data.
      */
-    update: (data: Data, filter: Filter | boolean) => Promise<IdOrError[]>;
+    update: (data: Data, filter: boolean) => Promise<IdOrError[]>;
     /**
      * Updates data in the JSON database. Data can either be given as
      * key-value parameter pairs, OR if the key field has been specified Object

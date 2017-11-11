@@ -282,6 +282,8 @@ module.exports = function JsonFileDB(file, options) {
         } else {
           readData().then(function(data) {
             resolve(data);
+          }).catch(function(error) {
+            reject(error);
           });
         }
         return;
@@ -315,6 +317,8 @@ module.exports = function JsonFileDB(file, options) {
           }, function(err) {
             reject(err);
           });
+        }).catch(function(error) {
+          reject(error);
         });
 
         return;
@@ -332,8 +336,8 @@ module.exports = function JsonFileDB(file, options) {
 
       promise.then(function(data) {
         resolve(data);
-      }, function(err) {
-        reject(err);
+      }).catch(function(error) {
+        reject(error);
       });
     });
   }
@@ -392,7 +396,7 @@ module.exports = function JsonFileDB(file, options) {
           keysPromise = readKeys();
         }
 
-        return keysPromise.then(function(existingKeys) {
+        keysPromise.then(function(existingKeys) {
           console.log('delete got existing keys', existingKeys);
           if (options.cacheValues) {
             cachedData = {};
@@ -404,7 +408,11 @@ module.exports = function JsonFileDB(file, options) {
           saveData({}).then(function() {
             resolve(existingKeys);
           });
+        }).catch(function(error) {
+          reject(error);
         });
+
+        return;
       } else if (common.keyTypes.indexOf(typeof filter) !== -1) {
         filter = [filter];
       } else if (filter instanceof Array) {
@@ -418,16 +426,16 @@ module.exports = function JsonFileDB(file, options) {
 
         dataPromise.then(function(data) {
           var deletedKeys = [];
-          common.processFilter(data, filter, function(id) {
+          return common.processFilter(data, filter, function(id) {
             deletedKeys.push(id);
             delete data[id];
           }).then(function() {
             return saveData(data);
           }).then(function() {
             resolve(deletedKeys);
-          }, function(err) {
-            reject(err);
           });
+        }).catch(function(error) {
+          reject(error);
         });
 
         return;
@@ -474,6 +482,8 @@ module.exports = function JsonFileDB(file, options) {
           resolve(deletedIds);
           return Promise.resolve();
         });
+      }).catch(function(error) {
+        reject(error);
       });
     });
 
