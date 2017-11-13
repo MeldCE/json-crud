@@ -492,8 +492,11 @@ module.exports = function JsonFolderDB(file, options) {
         } else {
           readData().then(function(data) {
             resolve(data);
+          }).catch(function(error) {
+            reject(error);
           });
         }
+        return;
       } else if (typeof filter !== 'object') {
         reject(new Error('filter needs to be a key, an array of keys or a '
             + 'filter Object'));
@@ -504,8 +507,8 @@ module.exports = function JsonFolderDB(file, options) {
             fetchedData[id] = itemData;
           }).then(function() {
             resolve(fetchedData);
-          }, function(err) {
-            reject(err);
+          }).catch(function(error) {
+            reject(error);
           });
         } else {
           var keysPromise;
@@ -528,6 +531,8 @@ module.exports = function JsonFolderDB(file, options) {
             Promise.all(fetchPromises).then(function() {
               resolve(fetchedData);
             });
+          }).catch(function(error) {
+            reject(error);
           });
         }
         return;
@@ -536,6 +541,8 @@ module.exports = function JsonFolderDB(file, options) {
       // Get values for keys
       return getValues(filter, expectSingle).then(function(data) {
         resolve(data);
+      }).catch(function(error) {
+        reject(error);
       });
     });
   }
@@ -560,7 +567,7 @@ module.exports = function JsonFolderDB(file, options) {
       } else if (filter === true || typeof filter === 'object') {
         console.log('object/true delete handler');
         // Get the existing keys
-        return readKeys().then(function(existingKeys) {
+        readKeys().then(function(existingKeys) {
           console.log('existing keys are', existingKeys);
           if (filter === true) {
             deletedKeys = existingKeys;
@@ -607,8 +614,12 @@ module.exports = function JsonFolderDB(file, options) {
               cachedKeys = [];
             }
             resolve(deletedKeys);
-          }, reject);
+          });
+        }).catch(function(error) {
+          reject(error);
         });
+
+        return;
       } else {
         reject({
           message: 'filter needs to be an object containing a filter'
@@ -648,6 +659,8 @@ module.exports = function JsonFolderDB(file, options) {
           }
           resolve(deletedKeys);
         });
+      }).catch(function(error) {
+        reject(error);
       });
     });
   }

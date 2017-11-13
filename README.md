@@ -1,4 +1,4 @@
-JSON Crud v1.0.0
+JSON Crud v1.0.1
 =========================
 A simple CRUD JSON database using either a JSON file or a folder of JSON files.
 
