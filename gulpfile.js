@@ -182,6 +182,11 @@ gulp.task('copy', ['jasmine', 'copy:json'], function() {
     .pipe(gulp.dest(paths.dist));
 });
 
+gulp.task('copy:dev', ['jasmine', 'copy:json'], function() {
+  return gulp.src([paths.src, paths.srcMain, paths.srcTests, paths.srcTestLib], { base: 'src' })
+    .pipe(gulp.dest(paths.dist));
+});
+
 gulp.task('copy:json', ['jasmine'], function() {
   return gulp.src([paths.srcJasmineJson, paths.srcJson], { base: 'src' })
     .pipe(gulp.dest(paths.dist));
@@ -212,7 +217,7 @@ gulp.task('one', defaultTasks);
 
 gulp.task('default', defaultTasks.concat(['watch']));
 
-gulp.task('develop', defaultTasks.concat(['copy', 'watch']));
+gulp.task('dev', defaultTasks.concat(['copy:dev', 'watch']));
 
 //gulp.task('production', defaultTasks.concat(['copy', 'jasmine:production', 'coveralls']));
 gulp.task('production', defaultTasks.concat(['copy', 'jasmine:production']));

@@ -2,9 +2,9 @@
 
 var fs = require('fs');
 var path = require('path');
-var skemer = require('skemer');
+var ZSchema = require('z-schema');
 var Promise = require('promise');
-var merge = require('merge');
+var validator = new ZSchema();
 
 /*require('promise/lib/rejection-tracking').enable(
   {allRejections: true}
@@ -34,7 +34,7 @@ var optionsSchema = require('./lib/options.json');
 function jsonDB() {
   var args = Array.prototype.slice.call(arguments);
   return new Promise(function(resolve, reject) {
-    var file, options, schema;
+    var file, options;
 
     if (args.length === 0) {
       return reject(new Error('No path or options given'));
@@ -43,19 +43,17 @@ function jsonDB() {
     // Check if we have a file
     if (typeof args[0] === 'string' || args[0] === false) {
       file = args.shift();
-      schema = optionsSchema;
+    }
+
+    if (typeof args[0] === 'undefined') {
+      options = {};
     } else {
-      // Make file required
-      schema = merge(true, optionsSchema);
-      schema.type.path.required = true;
+      options = args.shift();
     }
 
     // Check for options
     try {
-      options = skemer.validateNew({
-        schema: schema,
-        parameter: 'options'
-      }, args[0] || {});
+      validator.validate(options, optionsSchema);
     } catch (err) {
       return reject(err);
     }

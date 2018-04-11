@@ -1,7 +1,8 @@
 {
-  "type": {
+  "type": "object",
+  "properties": {
     "path": {
-      "types": [
+      "oneOf": [
         {
           "type": "string"
         },
@@ -20,8 +21,11 @@
       "type": "boolean"
     },
     "cacheKeyValues": {
-      "type": "string",
-      "multiple": true
+      "type": "array",
+      "values": {
+        "type": "string"
+      }
     }
-  }
+  },
+  "required": [ "path" ]
 }
