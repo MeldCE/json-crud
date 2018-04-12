@@ -1,4 +1,20 @@
 language: node_js
 node_js:
-  - "node"
-  - "6"
+- 6
+- 8.9.4
+before_deploy:
+  - git config --local user.name "MT Bot"
+  - git config --local user.email "opensource@meldce.com"
+  - git tag "v$(node -p \"require('./package.json').version\")"
+deploy:
+  - provider: npm
+    email: wt3kd893td@bytes.nz
+    on:
+      branch: master
+    api_key:
+      secure: sZ1BzqQTfPYkzvucF4jnjgU6mBVpipJyTHdH5vOj1/G9WTA3/QmV+CpaWE04Dq/KM6BAkMBO5ImEhRoA2e/Zjg+8bQqqxiBrHk2AxgTeN3luz5ZuD9YcQmCJ41Q9SfM5z5H2ffmxeUnp9uo4nF/oMWz+5aENDXlsueHVUbwdz8DwHphyUml7EKQwuaeEAuCOo+8LO5eIo/O6Iz4dL4pp8pRiqjeMFqY2+IepOV4Vh/RMP84TeWfGYZwURAHIfSOdjEeICDEPnB2XHvo/bQiZRkkpFMPU4vH5O6cA+zC++/XVpG9tKaSfFG2hCN3d/Dssgg6PE+SYmpjOcU4FRpI8T4SeRkt61D423hqd8OalzEmblgH9CsQgvC+dcGHoXZ1ZNbAE2H/tbgYQywZCPYyqiYTxaV3RffemxUcBhITSV3vcNhv4aJ1Uoc4e7iM9g+5wJ6d/+WNaqClk7XfBZ/E3sF4FtIBGbJcZHxEugS9xRgswoWQ4ePCWAREd+BFnXgEHAFFSyZDKjUqIn+5qttQDT15wVCZX4o7Sc898MiMjNTpdPWv3GfU+F3lpyQYlkIQqx2tXC0DrJHgul0Y+4l2WosWx3Ebaryqk/cE8lsl4P/aoIR7N2aT0SlQWo4ZjyaiY0AU9/OePSB6v40xC7ZXy17l0N/7nd/3Fd46CiWJU868=
+  - provider: releases
+    on:
+      branch: master
+    api_key:
+      secure: Gn/yC33BZO8qgugLl5yotAPy7HYKTcr5AsWMbe6a9wcGlEo2TKnPucwVAn883uINyymFzUp7Y6FovVngMle5rQKEK4ArtoXwIziUaKP/6XtcSXIQPqWSQbZi9Mop9Z6X5Rp7Ni7QwQXbNyJt7Z84Qaf0MO1aCIxDbG/5y/BXNI8AImQx57J/PqAc1xXpEgtZ4KXOuMjc/h77Kql/EKLwe07RsaTBDuUG2DWrbIC0Dcs1oaPMP09pKZejg+cm0hMHABcv2+dUG8iUE5TkW09K6+KUpH9MfqZP8jiJykbzb/86tWtCznHFAjJcAKZPVoBJp/6gVhpjmT5+8/rneChDKjYv2tcJ+J11lJUQmG+abtw1xYD6DaoE0OTmuuoZQ9T661hHCAsuQeADTVzk8clJm8r9LlxFTrRvjccz4TsxJoVzvyjEHvQHEh1ybKrkeJvkOhR4GwH2pngaPHciNXhVqDX3/BkrGBrdauAKGsd2RTHJp60jCMY6yvohhAo9VpN1g+Xd7/pUF4hzBvQ5oQuvvjxROrrNjq1QtdgfZDZMhh1OiesPB8+nKtChQY0wvHwXjtgsXGW4Mm3ZSWwa+9Mfs7tyzsKSZBZd+AJB0hFIVGn5phcohvnkVi34HJTmubIODDqCQvIE2No84M9x8dcaspHKGjTPBHGX2fJnawUACx8=
